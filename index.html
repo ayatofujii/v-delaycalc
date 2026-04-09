@@ -2,714 +2,767 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>v-delayCalc</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
 :root {
-  --bg:      #0c0e10;
-  --surface: #13161a;
-  --border:  #1f2430;
-  --border2: #2d3545;
+  --bg:      #1a1a1a;
+  --surface: #141414;
+  --card:    #111111;
+  --border:  #2a2a2a;
+  --border2: #383838;
   --accent:  #e8ff47;
   --accent2: #ff4747;
   --ok:      #47ffb2;
-  --text:    #c4cdd8;
-  --dim:     #3d4a5c;
-  --mid:     #6b7a8d;
+  --text:    #d0d8e4;
+  --dim:     #888888;
+  --mid:     #aaaaaa;
   --mono:    'DM Mono', monospace;
   --sans:    'Noto Sans JP', sans-serif;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; font-size: 14px; }
 
-/* HEADER */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html {
+  background: #1a1a1a;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
 header {
-  display: flex; align-items: baseline; gap: 14px;
-  padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 10;
 }
 .logo { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
-.logo-sep { color: var(--dim); font-weight: 300; }
-.tagline { font-family: var(--mono); font-size: 10px; color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase; }
+.logo-sep { color: #333; font-weight: 300; }
+.ver { font-family: var(--mono); font-size: 9px; color: var(--mid); letter-spacing: 0.1em; }
 
-/* LAYOUT */
-.wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
+/* ── PAGE ── */
+.page {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  margin: 0 auto;
+}
 
-/* CARD */
-.card { border: 1px solid var(--border); border-radius: 3px; background: var(--surface); overflow: hidden; }
-.card-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--border); background: #0f1215; }
+/* ── BLOCK（枠で囲む） ── */
+.block {
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  background: var(--card);
+  overflow: hidden;
+}
+.block-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
 .step-num {
-  font-family: var(--mono); font-size: 10px; color: var(--dim);
-  border: 1px solid var(--border2); min-width: 22px; height: 22px;
-  display: flex; align-items: center; justify-content: center; border-radius: 2px; flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--mid);
+  border: 1px solid var(--border2);
+  min-width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; flex-shrink: 0;
+  transition: all 0.2s;
 }
 .step-num.active { border-color: var(--accent); color: var(--accent); }
 .step-num.done   { border-color: var(--ok);     color: var(--ok); }
-.card-title { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase; }
-.card-body { padding: 16px; }
+.block-title {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.block-body { padding: 12px 14px; }
 
-/* UPLOAD */
+/* ── BLOCK 1: UPLOAD ── */
 #videoInput { display: none; }
 .upload-zone {
-  border: 1px dashed var(--border2); border-radius: 3px; padding: 32px 16px;
-  text-align: center; cursor: pointer; background: #090b0e;
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border2); border-radius: 5px;
+  background: var(--bg); cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
-.upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: #0e1205; }
-.upload-icon { font-size: 22px; margin-bottom: 8px; opacity: 0.3; }
-.upload-main { font-family: var(--mono); font-size: 12px; color: var(--mid); }
-.upload-main strong { color: var(--accent); }
-.upload-sub  { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-top: 4px; }
-.file-st { font-family: var(--mono); font-size: 11px; color: var(--ok); margin-top: 10px; display: none; }
+.upload-zone:hover, .upload-zone:active { border-color: var(--accent); background: #0a0d00; }
+.upload-zone.loaded { border-color: var(--ok); background: #001a0d; }
 
-/* NOTICE */
-.notice {
-  font-family: var(--mono); font-size: 10px; color: var(--dim); line-height: 1.8;
-  padding: 11px 13px; border: 1px solid var(--border); border-radius: 3px;
-  background: #090b0e; margin-top: 12px;
+/* 映画フィルムアイコン（SVGインライン） */
+.film-icon {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  opacity: 0.45;
+  color: var(--text);
 }
-.notice strong { color: var(--mid); }
+.upload-zone.loaded .film-icon { color: var(--ok); opacity: 0.8; }
 
-/* RECT */
-.rect-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.upload-text { font-family: var(--mono); font-size: 11px; color: var(--mid); line-height: 1.6; }
+.upload-text b { display: block; font-size: 12px; color: var(--text); margin-bottom: 2px; }
+.upload-text.ok b { color: var(--ok); }
+
+/* ── BLOCK 2: CANVAS + CONTROLS ── */
+.canvas-outer {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  min-height: 160px;
+  position: relative;
+  overflow: hidden;
+}
+#frameCanvas {
+  display: none;
+  width: 100%; height: auto;
+  position: relative;
+}
+.cv-ph {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+}
+.cv-ph-icon { font-size: 32px; opacity: 0.08; }
+.cv-ph-text { font-family: var(--mono); font-size: 10px; color: var(--mid); text-align: center; line-height: 1.9; }
+
+.ctrl-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.rect-group { display: flex; gap: 6px; align-items: center; flex: 1; flex-wrap: wrap; }
 .rbtn {
-  font-family: var(--mono); font-size: 11px; padding: 5px 11px; border-radius: 2px;
-  cursor: pointer; border: 1px solid transparent; transition: all 0.12s; user-select: none;
+  font-family: var(--mono); font-size: 10px;
+  padding: 5px 10px; border-radius: 3px; cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+  transition: all 0.12s;
 }
-.rbtn.inp { background: #001633; color: #5aaeff; border-color: #003380; }
-.rbtn.out { background: #1f0a00; color: #ff8c42; border-color: #7a3000; }
+.rbtn .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.rbtn.inp { background: #001228; color: #5aaeff; border-color: #002a5c; }
+.rbtn.out { background: #1a0800; color: #ff8c42; border-color: #5c2400; }
 .rbtn.active   { box-shadow: 0 0 0 1px currentColor; }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
-  font-family: var(--mono); font-size: 10px; background: transparent; color: var(--dim);
-  border: 1px solid var(--border2); padding: 5px 10px; border-radius: 2px;
-  cursor: pointer; margin-left: auto; transition: color 0.12s;
+  font-family: var(--mono); font-size: 10px;
+  background: transparent; color: var(--mid);
+  border: 1px solid var(--border2); padding: 5px 8px;
+  border-radius: 3px; cursor: pointer;
+  transition: color 0.12s;
 }
 .rreset:hover { color: var(--text); }
-.canvas-wrap { border: 1px solid var(--border); border-radius: 2px; background: #060709; cursor: crosshair; overflow: hidden; }
-#frameCanvas { display: block; max-width: 100%; }
-.rect-hint { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-top: 6px; }
 
-/* ANALYZE BTN */
 .analyze-btn {
-  width: 100%; padding: 14px; background: var(--accent); color: #000;
-  font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: 0.1em;
-  text-transform: uppercase; border: none; border-radius: 2px; cursor: pointer; transition: background 0.12s;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--accent); color: #000;
+  border: none; border-radius: 3px; cursor: pointer;
+  padding: 8px 18px; white-space: nowrap; flex-shrink: 0;
+  transition: background 0.12s;
 }
 .analyze-btn:hover    { background: #f0ff60; }
-.analyze-btn:disabled { background: var(--border2); color: var(--dim); cursor: not-allowed; }
+.analyze-btn:disabled { background: #1a1a1a; color: #444; cursor: not-allowed; }
 
-/* PROGRESS */
-.prog-wrap { margin-top: 12px; display: none; }
-.prog-track { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
-.prog-fill  { height: 100%; background: var(--accent); width: 0; transition: width 0.15s; }
-.prog-label { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-top: 5px; }
-
-/* RESULTS */
-#resultCard { display: none; }
-
-.result-main-cell {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
-  padding: 28px 20px; text-align: center; margin-bottom: 14px;
+.prog { height: 2px; background: var(--border); display: none; }
+.prog-fill { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
+.prog-label {
+  font-family: var(--mono); font-size: 9px; color: var(--mid);
+  padding: 4px 14px; display: none; background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
-.result-unit-label { font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
-.result-big { font-family: var(--mono); font-size: 72px; font-weight: 500; color: var(--accent); line-height: 1; margin-bottom: 6px; }
-.result-unit-name { font-family: var(--mono); font-size: 14px; color: var(--mid); }
 
-.result-sub-cell {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 3px;
-  padding: 14px 20px; text-align: center; margin-bottom: 14px;
+/* ── BLOCK 3: RESULT ── */
+.result-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
 }
-.result-sub-val  { font-family: var(--mono); font-size: 28px; font-weight: 500; color: var(--text); }
-.result-sub-unit { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-left: 6px; }
+.result-cell {
+  background: var(--card);
+  padding: 16px 14px;
+  text-align: center;
+  transition: background 0.2s;
+}
+.result-cell.highlight { background: #0d1100; }
+.res-unit-label {
+  font-family: var(--mono); font-size: 9px; color: var(--mid);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.res-num {
+  font-family: var(--mono); font-weight: 500; color: #555555;
+  line-height: 1; margin-bottom: 4px;
+  transition: color 0.2s;
+}
+.res-num.large { font-size: 48px; }
+.res-num.medium { font-size: 32px; }
+.res-num.filled { color: var(--accent); }
+.res-sub {
+  font-family: var(--mono); font-size: 10px; color: var(--mid);
+}
+.conf-bar {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10px; color: var(--mid);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface);
+}
+.conf-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #555555; flex-shrink: 0;
+  transition: background 0.2s;
+}
 
-/* CONFIDENCE */
-.conf-row {
+/* グラフ */
+.graph-wrap {
+  display: none;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.g-label {
+  font-family: var(--mono); font-size: 9px; color: var(--mid);
+  letter-spacing: 0.08em; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 12px;
+}
+#graphCanvas { display: block; width: 100%; border-radius: 3px; background: #060709; }
+
+/* ── ALERT BLOCK ── */
+.alert-block {
+  display: none;
+  border-color: var(--accent2);
+}
+.alert-block .block-head { background: #1a0000; border-bottom-color: #400000; }
+.alert-body-text {
+  font-family: var(--mono); font-size: 11px; color: #ff9999; line-height: 1.9;
+}
+
+/* ── COLLAPSIBLE BLOCKS ── */
+.collapsible-head {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; background: #090b0e;
-  border: 1px solid var(--border); border-radius: 3px; margin-bottom: 14px;
+  padding: 9px 14px;
+  background: var(--surface);
+  cursor: pointer; user-select: none;
+  transition: background 0.12s;
 }
-.conf-lbl  { font-family: var(--mono); font-size: 10px; color: var(--dim); white-space: nowrap; letter-spacing: 0.08em; text-transform: uppercase; }
-.conf-text { font-family: var(--mono); font-size: 11px; flex: 1; }
-.conf-snr  { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+.collapsible-head:hover { background: #111; }
+.toggle-icon { font-family: var(--mono); font-size: 10px; color: var(--mid); margin-left: auto; }
+.collapsible-body { display: none; border-top: 1px solid var(--border); }
+.collapsible-body.open { display: block; }
 
-/* ERROR BANNER */
-.err-banner {
-  display: none; background: #180000; border: 2px solid var(--accent2);
-  border-radius: 3px; padding: 18px; margin-bottom: 14px;
+/* 注意事項 */
+.notice-text {
+  font-family: var(--mono); font-size: 10px; color: var(--mid);
+  line-height: 1.9; padding: 12px 14px;
 }
-.err-title { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--accent2); margin-bottom: 8px; letter-spacing: 0.04em; }
-.err-body  { font-family: var(--mono); font-size: 11px; color: #ff9999; line-height: 1.9; }
+.notice-text b { color: var(--text); }
 
-/* GRAPH */
-.graph-wrap { border: 1px solid var(--border); border-radius: 2px; background: #060709; padding: 10px; margin-bottom: 14px; }
-.graph-lbl  { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-bottom: 5px; letter-spacing: 0.08em; }
-
-/* LOG */
-.log-box {
-  font-family: var(--mono); font-size: 10px; background: #060708;
-  border: 1px solid var(--border); border-radius: 2px; padding: 8px 10px;
-  max-height: 90px; overflow-y: auto; line-height: 1.9; color: var(--dim);
+/* ログ */
+.log-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
-.log-box .l-ok   { color: var(--ok); }
-.log-box .l-info { color: #5a8aaa; }
-.log-box .l-warn { color: #ffaa33; }
-
-@media (max-width: 560px) {
-  .result-big { font-size: 56px; }
-  .wrap { padding: 14px 12px; }
+.log-title { font-family: var(--mono); font-size: 9px; color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase; }
+.copy-btn {
+  font-family: var(--mono); font-size: 9px;
+  background: transparent; color: var(--mid);
+  border: 1px solid var(--border2); padding: 3px 8px;
+  border-radius: 2px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  transition: all 0.15s;
 }
+.copy-btn:hover { color: var(--text); border-color: var(--mid); }
+.copy-btn.copied { color: var(--ok); border-color: var(--ok); }
+#logBox {
+  font-family: var(--mono); font-size: 10px;
+  background: var(--bg); padding: 10px 14px;
+  line-height: 1.9; color: var(--mid);
+  white-space: pre-wrap; word-break: break-all;
+}
+#logBox .l-ok   { color: var(--ok); }
+#logBox .l-info { color: #4a7a9a; }
+#logBox .l-warn { color: #ffaa33; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="logo">v<span class="logo-sep">-</span>delayCalc</div>
-  <div class="tagline">Video Delay Analyzer</div>
+  <div class="ver">VIDEO DELAY ANALYZER</div>
 </header>
 
-<div class="wrap">
+<div class="page">
 
-  <!-- STEP 1: UPLOAD -->
-  <div class="card">
-    <div class="card-head">
+  <!-- ① 動画アップロード -->
+  <div class="block">
+    <div class="block-head">
       <div class="step-num active" id="s1">1</div>
-      <div class="card-title">動画アップロード</div>
+      <div class="block-title">動画アップロード</div>
     </div>
-    <div class="card-body">
+    <div class="block-body">
       <input type="file" id="videoInput" accept="video/*">
       <div class="upload-zone" id="uploadZone"
            onclick="document.getElementById('videoInput').click()">
-        <div class="upload-icon">▶</div>
-        <div class="upload-main"><strong>タップしてファイルを選択</strong>　またはドラッグ&ドロップ</div>
-        <div class="upload-sub">MP4 / MOV 対応　—　ブラウザ内完結・外部送信なし</div>
-      </div>
-      <div class="file-st" id="fileSt"></div>
-      <div class="notice">
-        <strong>撮影時の注意：</strong>
-        入力画面と出力画面が同じ画角に収まるよう横向きで撮影してください。<br>
-        解析精度を上げるため、<strong>撮影中に必ず1回カメラスイッチ（カットチェンジ）を入れてください。</strong>
-        カットチェンジの瞬間を基準点としてズレ量を算出します。
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 2: RECT -->
-  <div class="card">
-    <div class="card-head">
-      <div class="step-num" id="s2">2</div>
-      <div class="card-title">エリア選択</div>
-    </div>
-    <div class="card-body">
-      <div class="rect-bar">
-        <div class="rbtn inp active"   id="btnIn"  onclick="setMode('input')">● INPUT エリア</div>
-        <div class="rbtn out inactive" id="btnOut" onclick="setMode('output')">● OUTPUT エリア</div>
-        <button class="rreset" onclick="resetRects()">リセット</button>
-      </div>
-      <div class="canvas-wrap" id="canvasWrap">
-        <canvas id="frameCanvas"></canvas>
-      </div>
-      <div class="rect-hint" id="rectHint">動画をアップロードすると中間フレームが表示されます</div>
-    </div>
-  </div>
-
-  <!-- STEP 3: ANALYZE -->
-  <div class="card">
-    <div class="card-head">
-      <div class="step-num" id="s3">3</div>
-      <div class="card-title">解析</div>
-    </div>
-    <div class="card-body">
-      <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>ANALYZE</button>
-      <div class="prog-wrap" id="progWrap">
-        <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
-        <div class="prog-label" id="progLabel">準備中...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 4: RESULTS -->
-  <div class="card" id="resultCard">
-    <div class="card-head">
-      <div class="step-num done">4</div>
-      <div class="card-title">解析結果</div>
-    </div>
-    <div class="card-body">
-
-      <!-- エラーバナー -->
-      <div class="err-banner" id="errBanner">
-        <div class="err-title">⚠ カットチェンジが検出できませんでした</div>
-        <div class="err-body">
-          映像にカメラスイッチが含まれていないか、変化が小さすぎる可能性があります。<br>
-          撮影時に必ず1回カメラスイッチを入れてから再撮影してください。
+        <!-- 映画フィルムアイコン -->
+        <svg class="film-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="M2 8h20M2 16h20M7 4v4M7 16v4M12 4v16M17 4v4M17 16v4"/>
+        </svg>
+        <div class="upload-text" id="uploadText">
+          <b>タップしてファイルを選択</b>MP4 / MOV 対応　—　ブラウザ内完結
         </div>
       </div>
-
-      <!-- メイン数値：30fps換算 -->
-      <div class="result-main-cell" id="mainCell">
-        <div class="result-unit-label">映像ズレ量（30fps換算）</div>
-        <div class="result-big" id="r30">—</div>
-        <div class="result-unit-name">フレーム</div>
-      </div>
-
-      <!-- サブ数値：ms -->
-      <div class="result-sub-cell">
-        <span class="result-sub-val" id="rMs">—</span>
-        <span class="result-sub-unit">ms</span>
-      </div>
-
-      <!-- 信頼度 -->
-      <div class="conf-row">
-        <div class="conf-lbl">信頼度</div>
-        <div class="conf-text" id="confText">—</div>
-        <div class="conf-snr"  id="confSnr"></div>
-      </div>
-
-      <!-- グラフ -->
-      <div class="graph-wrap">
-        <div class="graph-lbl">CHANGE-SCORE TIMELINE　　<span style="color:#5aaeff">── INPUT</span>　<span style="color:#ff8c42">── OUTPUT</span></div>
-        <canvas id="graphCanvas" height="80"></canvas>
-      </div>
-
-      <!-- ログ -->
-      <div class="log-box" id="logBox"></div>
-
     </div>
   </div>
 
-</div><!-- /wrap -->
+  <!-- ② エリア選択 -->
+  <div class="block">
+    <div class="block-head">
+      <div class="step-num" id="s2">2</div>
+      <div class="block-title">エリア選択</div>
+    </div>
+
+    <div class="canvas-outer" id="canvasOuter">
+      <canvas id="frameCanvas"></canvas>
+      <div class="cv-ph" id="cvPH">
+        <div class="cv-ph-icon">🎞</div>
+        <div class="cv-ph-text">動画をアップロードすると<br>中間フレームが表示されます<br><br>INPUT → OUTPUT の順に<br>矩形をドラッグで選択</div>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <div class="rect-group">
+        <div class="rbtn inp active"   id="btnIn"  onclick="setMode('input')"><span class="dot"></span>INPUT</div>
+        <div class="rbtn out inactive" id="btnOut" onclick="setMode('output')"><span class="dot"></span>OUTPUT</div>
+        <button class="rreset" onclick="resetRects()">リセット</button>
+      </div>
+      <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>ANALYZE</button>
+    </div>
+
+    <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-label" id="progLabel"></div>
+  </div>
+
+  <!-- ③ 解析結果（最初から表示） -->
+  <div class="block">
+    <div class="block-head">
+      <div class="step-num" id="s3">3</div>
+      <div class="block-title">解析結果</div>
+    </div>
+
+    <div class="result-grid">
+      <!-- 30fps -->
+      <div class="result-cell" id="cell30">
+        <div class="res-unit-label">30fps 換算</div>
+        <div class="res-num large" id="r30">—</div>
+        <div class="res-sub">フレーム</div>
+      </div>
+      <!-- 60fps -->
+      <div class="result-cell" id="cell60">
+        <div class="res-unit-label">60fps 換算</div>
+        <div class="res-num medium" id="r60">—</div>
+        <div class="res-sub">フレーム</div>
+      </div>
+      <!-- ms -->
+      <div class="result-cell" id="cellMs">
+        <div class="res-unit-label">ミリ秒</div>
+        <div class="res-num medium" id="rMs">—</div>
+        <div class="res-sub">ms</div>
+      </div>
+    </div>
+
+    <div class="conf-bar" id="confBar">
+      <div class="conf-dot" id="confDot"></div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--mid);" id="confText">解析前</div>
+    </div>
+
+    <div class="graph-wrap" id="graphWrap">
+      <div class="g-label">
+        CHANGE-SCORE TIMELINE
+        <span style="color:#5aaeff">── INPUT</span>
+        <span style="color:#ff8c42">── OUTPUT</span>
+      </div>
+      <canvas id="graphCanvas" height="60"></canvas>
+    </div>
+  </div>
+
+  <!-- ⚠ アラート（通常非表示） -->
+  <div class="block alert-block" id="alertBlock">
+    <div class="block-head">
+      <div class="step-num" style="border-color:var(--accent2);color:var(--accent2);">!</div>
+      <div class="block-title" style="color:var(--accent2);" id="alertTitle">エラー</div>
+    </div>
+    <div class="block-body">
+      <div class="alert-body-text" id="alertBody"></div>
+    </div>
+  </div>
+
+  <!-- 📷 撮影時の注意（折りたたみ） -->
+  <div class="block">
+    <div class="collapsible-head" onclick="toggleSection('noticeBody','noticeIcon')">
+      <div class="step-num" style="border-color:var(--border2);color:var(--mid);font-size:11px;">📷</div>
+      <div class="block-title">撮影時の注意</div>
+      <div class="toggle-icon" id="noticeIcon">▼</div>
+    </div>
+    <div class="collapsible-body open" id="noticeBody">
+      <div class="notice-text">
+        <b>撮影方法：</b><br>
+        入力画面と出力画面が同じ画角に収まるよう横向きで撮影してください。<br><br>
+        <b>カットチェンジについて：</b><br>
+        解析精度を上げるため、<b>撮影中に必ず1回カメラスイッチ（カットチェンジ）を入れてください。</b>
+        カットチェンジの瞬間を基準点としてズレ量を算出します。<br><br>
+        <b>iPhoneでの撮影：</b><br>
+        設定 → カメラ → フォーマット → 「互換性優先」を選択してH.264で撮影してください。
+      </div>
+    </div>
+  </div>
+
+  <!-- ≡ 解析ログ（解析後に表示、折りたたみ） -->
+  <div class="block" id="logBlock" style="display:none;">
+    <div class="collapsible-head" onclick="toggleSection('logBody','logIcon')">
+      <div class="step-num" style="border-color:var(--border2);color:var(--mid);font-size:11px;">≡</div>
+      <div class="block-title">解析ログ</div>
+      <div class="toggle-icon" id="logIcon">▼</div>
+    </div>
+    <div class="collapsible-body open" id="logBody">
+      <div class="log-header">
+        <div class="log-title">LOG OUTPUT</div>
+        <button class="copy-btn" id="copyBtn" onclick="copyLog()">⎘ コピー</button>
+      </div>
+      <div id="logBox"></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
 
 <script>
 'use strict';
 
-// ================================================================
-// STATE
-// ================================================================
-let videoEl  = null;
-let rectIn   = null;
-let rectOut  = null;
-let drawMode = 'input';
-let isDrag   = false;
-let dragStart = null;
-let tempRect  = null;
+let videoEl=null, rectIn=null, rectOut=null;
+let drawMode='input', isDrag=false, dragStart=null, tempRect=null;
 
-// ================================================================
-// UTILS
-// ================================================================
-function log(msg, type = 'info') {
-  const box = document.getElementById('logBox');
-  const s   = document.createElement('span');
-  s.className   = `l-${type}`;
-  s.textContent = `> ${msg}\n`;
-  box.appendChild(s);
-  box.scrollTop = box.scrollHeight;
+// ── TOGGLE ──
+function toggleSection(bodyId, iconId) {
+  const b=document.getElementById(bodyId), i=document.getElementById(iconId);
+  b.classList.toggle('open');
+  i.textContent=b.classList.contains('open')?'▼':'▶';
 }
 
-function setProgress(pct, label) {
-  document.getElementById('progFill').style.width  = pct + '%';
-  document.getElementById('progLabel').textContent = label;
+// ── LOG ──
+function log(msg, type='info') {
+  const b=document.getElementById('logBox');
+  const s=document.createElement('span');
+  s.className=`l-${type}`; s.textContent=`> ${msg}\n`;
+  b.appendChild(s); b.scrollTop=b.scrollHeight;
+  document.getElementById('logBlock').style.display='block';
 }
 
-// ================================================================
-// UPLOAD
-// ================================================================
-document.getElementById('videoInput').addEventListener('change', e => {
-  const f = e.target.files[0];
-  if (f) loadVideo(f);
-});
+function setProgress(pct, label='') {
+  const p=document.getElementById('prog'), f=document.getElementById('progFill');
+  const lb=document.getElementById('progLabel');
+  if(pct>0&&pct<100){
+    p.style.display='block'; f.style.width=pct+'%';
+    if(label){ lb.style.display='block'; lb.textContent=label; }
+  } else if(pct>=100){
+    f.style.width='100%';
+    setTimeout(()=>{ p.style.display='none'; lb.style.display='none'; },500);
+  }
+}
 
-const zone = document.getElementById('uploadZone');
-zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
-zone.addEventListener('dragleave', ()  => zone.classList.remove('dragover'));
-zone.addEventListener('drop', e => {
-  e.preventDefault();
-  zone.classList.remove('dragover');
-  const f = e.dataTransfer.files[0];
-  if (f && f.type.startsWith('video/')) loadVideo(f);
-});
+function copyLog() {
+  const text=document.getElementById('logBox').innerText;
+  const btn=document.getElementById('copyBtn');
+  const done=()=>{ btn.textContent='✓ コピーしました'; btn.classList.add('copied'); setTimeout(()=>{ btn.textContent='⎘ コピー'; btn.classList.remove('copied'); },2000); };
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(()=>fallback(text,done));
+  else fallback(text,done);
+}
+function fallback(text,cb){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); cb(); }
+
+// ── UPLOAD ──
+document.getElementById('videoInput').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadVideo(f); });
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.style.borderColor='var(--accent)'; });
+zone.addEventListener('dragleave', ()=>zone.style.borderColor='');
+zone.addEventListener('drop', e=>{ e.preventDefault(); zone.style.borderColor=''; const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('video/')) loadVideo(f); });
 
 function loadVideo(file) {
-  const st = document.getElementById('fileSt');
-  st.style.display = 'block';
-  st.textContent   = `読み込み中… ${file.name}`;
-
-  if (videoEl) URL.revokeObjectURL(videoEl.src);
-  videoEl = document.createElement('video');
-  videoEl.muted      = true;
-  videoEl.playsInline = true;
-  videoEl.preload    = 'metadata';
-
-  videoEl.addEventListener('loadedmetadata', () => {
-    log(`読み込み完了: ${videoEl.videoWidth}x${videoEl.videoHeight} / ${videoEl.duration.toFixed(1)}s`, 'ok');
-    st.textContent = `✓ ${file.name}  (${(file.size/1024/1024).toFixed(1)} MB)`;
-    gotoMiddleFrame();
+  const t=document.getElementById('uploadText');
+  t.innerHTML='<b>読み込み中…</b>'+file.name;
+  if(videoEl) URL.revokeObjectURL(videoEl.src);
+  videoEl=document.createElement('video');
+  videoEl.muted=true; videoEl.playsInline=true; videoEl.preload='metadata';
+  videoEl.addEventListener('loadedmetadata', ()=>{
+    t.className='upload-text ok';
+    t.innerHTML=`<b>${file.name}</b>${videoEl.duration.toFixed(1)}s / ${(file.size/1024/1024).toFixed(1)}MB`;
+    zone.classList.add('loaded');
+    document.getElementById('s1').classList.remove('active');
+    document.getElementById('s1').classList.add('done');
+    gotoMid();
   });
-  videoEl.addEventListener('error', () => {
-    log('動画読み込みエラー。MP4(H.264)形式を推奨します。', 'warn');
-    st.textContent = '❌ 読み込み失敗';
-    st.style.color = '#ff4747';
+  videoEl.addEventListener('error', ()=>{
+    t.innerHTML='<b>❌ 読み込み失敗</b>MP4(H.264)形式を推奨します';
+    t.style.color='var(--accent2)';
   });
-
-  videoEl.src = URL.createObjectURL(file);
-  videoEl.load();
+  videoEl.src=URL.createObjectURL(file); videoEl.load();
 }
 
-function gotoMiddleFrame() {
-  const t = videoEl.duration * 0.5;
-  let rendered = false;
-  const render = () => {
-    if (rendered) return;
-    rendered = true;
-    renderFrame();
-  };
-  videoEl.addEventListener('seeked', render, { once: true });
-  setTimeout(render, 800);
-  videoEl.currentTime = t;
+function gotoMid() {
+  let done=false;
+  const go=()=>{ if(done)return; done=true; renderFrame(); };
+  videoEl.addEventListener('seeked',go,{once:true}); setTimeout(go,800);
+  videoEl.currentTime=videoEl.duration*0.5;
 }
 
 function renderFrame() {
-  const canvas = document.getElementById('frameCanvas');
-  const wrap   = document.getElementById('canvasWrap');
-  const maxW   = wrap.clientWidth || 800;
-  const scale  = Math.min(1, maxW / videoEl.videoWidth);
-  canvas.width  = Math.round(videoEl.videoWidth  * scale);
-  canvas.height = Math.round(videoEl.videoHeight * scale);
-  canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+  const canvas=document.getElementById('frameCanvas');
+  const outer=document.getElementById('canvasOuter');
+  const vW=videoEl.videoWidth, vH=videoEl.videoHeight;
+  const maxW=outer.clientWidth;
+  canvas.width=maxW; canvas.height=Math.round(vH*(maxW/vW));
+  canvas.style.display='block';
+  canvas.getContext('2d').drawImage(videoEl,0,0,canvas.width,canvas.height);
+  document.getElementById('cvPH').style.display='none';
   setupCanvas(canvas);
   document.getElementById('s2').classList.add('active');
-  document.getElementById('rectHint').textContent = 'INPUTエリアをドラッグで選択してください';
-  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('analyzeBtn').disabled=false;
 }
 
-// ================================================================
-// RECT DRAWING
-// ================================================================
-function setupCanvas(canvas) {
-  canvas.addEventListener('mousedown',  e => startDrag(canvas, e.clientX, e.clientY));
-  canvas.addEventListener('mousemove',  e => moveDrag(canvas,  e.clientX, e.clientY));
-  canvas.addEventListener('mouseup',    e => endDrag(canvas,   e.clientX, e.clientY));
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); startDrag(canvas, e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-  canvas.addEventListener('touchmove',  e => { e.preventDefault(); moveDrag(canvas,  e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-  canvas.addEventListener('touchend',   e => { e.preventDefault(); endDrag(canvas,   e.changedTouches[0].clientX, e.changedTouches[0].clientY); });
+// ── RECT ──
+function setupCanvas(c) {
+  c.addEventListener('mousedown',  e=>sd(c,e.clientX,e.clientY));
+  c.addEventListener('mousemove',  e=>md(c,e.clientX,e.clientY));
+  c.addEventListener('mouseup',    e=>ed(c,e.clientX,e.clientY));
+  c.addEventListener('mouseleave', e=>{ if(isDrag) ed(c,e.clientX,e.clientY); });
+  c.addEventListener('touchstart', e=>{ e.preventDefault(); sd(c,e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
+  c.addEventListener('touchmove',  e=>{ e.preventDefault(); md(c,e.touches[0].clientX,e.touches[0].clientY); },{passive:false});
+  c.addEventListener('touchend',   e=>{ e.preventDefault(); ed(c,e.changedTouches[0].clientX,e.changedTouches[0].clientY); });
 }
-
-function cpos(canvas, cx, cy) {
-  const r = canvas.getBoundingClientRect();
-  return { x: (cx - r.left) * (canvas.width / r.width), y: (cy - r.top) * (canvas.height / r.height) };
+function cp(c,cx,cy){ const r=c.getBoundingClientRect(); return {x:(cx-r.left)*(c.width/r.width),y:(cy-r.top)*(c.height/r.height)}; }
+function nr(x1,y1,x2,y2){ return {x:Math.min(x1,x2),y:Math.min(y1,y2),w:Math.abs(x2-x1),h:Math.abs(y2-y1)}; }
+function sd(c,cx,cy){ isDrag=true; dragStart=cp(c,cx,cy); }
+function md(c,cx,cy){ if(!isDrag)return; tempRect=nr(dragStart.x,dragStart.y,cp(c,cx,cy).x,cp(c,cx,cy).y); redraw(); }
+function ed(c,cx,cy){
+  if(!isDrag)return; isDrag=false;
+  const p=cp(c,cx,cy), r=nr(dragStart.x,dragStart.y,p.x,p.y);
+  if(r.w>10&&r.h>10){ if(drawMode==='input'){ rectIn=r; setMode('output'); } else { rectOut=r; } }
+  tempRect=null; redraw();
 }
-function nrect(x1,y1,x2,y2) { return { x:Math.min(x1,x2), y:Math.min(y1,y2), w:Math.abs(x2-x1), h:Math.abs(y2-y1) }; }
-
-function startDrag(c, cx, cy) { isDrag=true; dragStart=cpos(c,cx,cy); }
-function moveDrag(c, cx, cy)  {
-  if (!isDrag) return;
-  tempRect = nrect(dragStart.x, dragStart.y, cpos(c,cx,cy).x, cpos(c,cx,cy).y);
-  redraw();
+function setMode(m){
+  drawMode=m;
+  document.getElementById('btnIn').className =`rbtn inp ${m==='input' ?'active':'inactive'}`;
+  document.getElementById('btnOut').className=`rbtn out ${m==='output'?'active':'inactive'}`;
 }
-function endDrag(c, cx, cy) {
-  if (!isDrag) return;
-  isDrag = false;
-  const p = cpos(c, cx, cy);
-  const r = nrect(dragStart.x, dragStart.y, p.x, p.y);
-  if (r.w > 10 && r.h > 10) {
-    if (drawMode === 'input') {
-      rectIn = r;
-      log(`INPUT矩形設定: ${Math.round(r.w)}x${Math.round(r.h)}px`, 'ok');
-      setMode('output');
-    } else {
-      rectOut = r;
-      log(`OUTPUT矩形設定: ${Math.round(r.w)}x${Math.round(r.h)}px`, 'ok');
-      document.getElementById('rectHint').textContent = '両エリア指定完了 — ANALYZEボタンを押してください';
-      document.getElementById('s3').classList.add('active');
-    }
-  }
-  tempRect = null;
-  redraw();
+function resetRects(){ rectIn=rectOut=null; setMode('input'); redraw(); }
+function redraw(){
+  const c=document.getElementById('frameCanvas');
+  if(!c.width||!videoEl)return;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(videoEl,0,0,c.width,c.height);
+  if(rectIn)   dr(ctx,rectIn, '#5aaeff','INPUT');
+  if(rectOut)  dr(ctx,rectOut,'#ff8c42','OUTPUT');
+  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#5aaeff':'#ff8c42','',true);
 }
-
-function setMode(mode) {
-  drawMode = mode;
-  document.getElementById('btnIn').className  = `rbtn inp ${mode==='input'  ? 'active' : 'inactive'}`;
-  document.getElementById('btnOut').className = `rbtn out ${mode==='output' ? 'active' : 'inactive'}`;
-  document.getElementById('rectHint').textContent =
-    mode === 'input' ? 'INPUTエリアをドラッグで選択してください'
-                     : 'OUTPUTエリアをドラッグで選択してください';
-}
-
-function resetRects() {
-  rectIn = rectOut = null;
-  setMode('input');
-  redraw();
-  log('矩形リセット', 'warn');
-}
-
-function redraw() {
-  const canvas = document.getElementById('frameCanvas');
-  if (!canvas.width || !videoEl) return;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-  if (rectIn)   drawR(ctx, rectIn,  '#5aaeff', 'INPUT');
-  if (rectOut)  drawR(ctx, rectOut, '#ff8c42', 'OUTPUT');
-  if (tempRect) drawR(ctx, tempRect, drawMode==='input' ? '#5aaeff' : '#ff8c42', '', true);
-}
-
-function drawR(ctx, r, color, label, dashed=false) {
-  ctx.save();
-  ctx.strokeStyle = color; ctx.lineWidth = 2;
-  if (dashed) ctx.setLineDash([4,4]);
-  ctx.strokeRect(r.x, r.y, r.w, r.h);
-  ctx.fillStyle = color + '22';
-  ctx.fillRect(r.x, r.y, r.w, r.h);
-  if (label) {
-    ctx.fillStyle = color;
-    ctx.font = 'bold 11px DM Mono, monospace';
-    ctx.fillText(label, r.x+4, r.y+14);
-  }
+function dr(ctx,r,color,label,dashed=false){
+  ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2;
+  if(dashed) ctx.setLineDash([4,4]);
+  ctx.strokeRect(r.x,r.y,r.w,r.h);
+  ctx.fillStyle=color+'1a'; ctx.fillRect(r.x,r.y,r.w,r.h);
+  if(label){ ctx.fillStyle=color; ctx.font='bold 10px DM Mono,monospace'; ctx.fillText(label,r.x+4,r.y+13); }
   ctx.restore();
 }
 
-// ================================================================
-// FRAME CAPTURE — rAF再生ベース
-// ================================================================
-function toVideoCoords(r) {
-  const canvas = document.getElementById('frameCanvas');
-  return {
-    x: Math.max(0, Math.round(r.x * videoEl.videoWidth  / canvas.width)),
-    y: Math.max(0, Math.round(r.y * videoEl.videoHeight / canvas.height)),
-    w: Math.max(8, Math.round(r.w * videoEl.videoWidth  / canvas.width)),
-    h: Math.max(8, Math.round(r.h * videoEl.videoHeight / canvas.height)),
-  };
+// ── CAPTURE ──
+function toVC(r){
+  const c=document.getElementById('frameCanvas');
+  return { x:Math.max(0,Math.round(r.x*videoEl.videoWidth/c.width)), y:Math.max(0,Math.round(r.y*videoEl.videoHeight/c.height)), w:Math.max(8,Math.round(r.w*videoEl.videoWidth/c.width)), h:Math.max(8,Math.round(r.h*videoEl.videoHeight/c.height)) };
 }
-
-function getLuminance(ctx, vr) {
-  const tmp = document.createElement('canvas');
-  tmp.width = 16; tmp.height = 16;
-  tmp.getContext('2d').drawImage(ctx.canvas, vr.x, vr.y, vr.w, vr.h, 0, 0, 16, 16);
-  const d = tmp.getContext('2d').getImageData(0,0,16,16).data;
-  let s = 0;
-  for (let i=0; i<d.length; i+=4) s += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-  return s / (16*16);
+function getLum(ctx,vr){
+  const t=document.createElement('canvas'); t.width=16; t.height=16;
+  t.getContext('2d').drawImage(ctx.canvas,vr.x,vr.y,vr.w,vr.h,0,0,16,16);
+  const d=t.getContext('2d').getImageData(0,0,16,16).data;
+  let s=0; for(let i=0;i<d.length;i+=4) s+=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+  return s/(16*16);
 }
-
-function captureScores(rect, startSec, endSec, N) {
-  return new Promise(resolve => {
-    const vr  = toVideoCoords(rect);
-    const off = document.createElement('canvas');
-    off.width  = videoEl.videoWidth;
-    off.height = videoEl.videoHeight;
-    const ctx  = off.getContext('2d');
-    const scores = [], times = [];
-    const step = (endSec - startSec) / N;
-    let nextCapture = startSec, rafId = null, started = false;
-
-    const finish = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      videoEl.pause();
-      resolve({ scores, times });
+function captureScores(rect,s0,e0,N){
+  return new Promise(resolve=>{
+    const vr=toVC(rect);
+    const off=document.createElement('canvas'); off.width=videoEl.videoWidth; off.height=videoEl.videoHeight;
+    const ctx=off.getContext('2d');
+    const scores=[],times=[];
+    const step=(e0-s0)/N; let nc=s0,rafId=null,started=false;
+    const finish=()=>{ if(rafId)cancelAnimationFrame(rafId); videoEl.pause(); resolve({scores,times}); };
+    const tick=()=>{
+      const t=videoEl.currentTime;
+      while(scores.length<N&&t>=nc-0.005){ ctx.drawImage(videoEl,0,0); scores.push(getLum(ctx,vr)); times.push(t); nc+=step; }
+      if(scores.length>=N||t>=e0+0.15){ finish(); return; }
+      rafId=requestAnimationFrame(tick);
     };
-
-    const tick = () => {
-      const t = videoEl.currentTime;
-      while (scores.length < N && t >= nextCapture - 0.005) {
-        ctx.drawImage(videoEl, 0, 0);
-        scores.push(getLuminance(ctx, vr));
-        times.push(t);
-        nextCapture += step;
-      }
-      if (scores.length >= N || t >= endSec + 0.15) { finish(); return; }
-      rafId = requestAnimationFrame(tick);
-    };
-
-    const startPlay = () => {
-      if (started) return; started = true;
-      videoEl.playbackRate = 1.0;
-      videoEl.play().catch(() => {});
-      rafId = requestAnimationFrame(tick);
-      setTimeout(finish, Math.max(6000, (endSec-startSec)*2000 + 3000));
-    };
-
-    videoEl.muted = true;
-    videoEl.currentTime = startSec;
-    videoEl.addEventListener('seeked', startPlay, { once: true });
-    setTimeout(startPlay, 600);
+    const go=()=>{ if(started)return; started=true; videoEl.playbackRate=1; videoEl.play().catch(()=>{}); rafId=requestAnimationFrame(tick); setTimeout(finish,Math.max(6000,(e0-s0)*2000+3000)); };
+    videoEl.muted=true; videoEl.currentTime=s0;
+    videoEl.addEventListener('seeked',go,{once:true}); setTimeout(go,600);
   });
 }
 
-// ================================================================
-// CUT DETECTION
-// ================================================================
-function detectCut(scores) {
-  const diffs = scores.slice(1).map((v,i) => Math.abs(v - scores[i]));
-  let maxVal = -Infinity, maxIdx = 0;
-  diffs.forEach((d,i) => { if (d > maxVal) { maxVal=d; maxIdx=i; } });
-  const avg = diffs.reduce((a,b)=>a+b,0) / diffs.length;
-  return { idx: maxIdx+1, score: maxVal, snr: maxVal/(avg||1), diffs };
+// ── CUT DETECT ──
+function detectCut(scores){
+  const diffs=scores.slice(1).map((v,i)=>Math.abs(v-scores[i]));
+  let mx=-Infinity,mi=0; diffs.forEach((d,i)=>{ if(d>mx){mx=d;mi=i;} });
+  const avg=diffs.reduce((a,b)=>a+b,0)/diffs.length;
+  return {idx:mi+1,score:mx,snr:mx/(avg||1),diffs};
 }
 
-// ================================================================
-// MAIN ANALYZE — 2段階スキャン
-// ================================================================
-async function analyze() {
-  if (!videoEl)            { log('動画をアップロードしてください', 'warn'); return; }
-  if (!rectIn || !rectOut) { log('INPUT・OUTPUT両エリアを矩形選択してください', 'warn'); return; }
+// ── RESULT ──
+function setResultCells(f30, f60, ms) {
+  const r30=document.getElementById('r30');
+  const r60=document.getElementById('r60');
+  const rMs=document.getElementById('rMs');
+  r30.textContent=f30; r30.classList.toggle('filled', f30!=='—');
+  r60.textContent=f60; r60.classList.toggle('filled', f60!=='—');
+  rMs.textContent=ms;  rMs.classList.toggle('filled', ms!=='—');
+  document.getElementById('cell30').classList.toggle('highlight', f30!=='—');
+  document.getElementById('cell60').classList.toggle('highlight', f60!=='—');
+  document.getElementById('cellMs').classList.toggle('highlight', ms!=='—');
+}
+function setConf(snr) {
+  const dot=document.getElementById('confDot'), text=document.getElementById('confText');
+  if(snr===null){ dot.style.background='var(--dim)'; text.textContent='解析前'; text.style.color='var(--mid)'; return; }
+  if(snr>=5){ dot.style.background='var(--ok)'; text.textContent=`信頼度：高（SNR: ${snr.toFixed(1)}）`; text.style.color='var(--ok)'; }
+  else if(snr>=2){ dot.style.background='var(--accent)'; text.textContent=`信頼度：中（SNR: ${snr.toFixed(1)}）`; text.style.color='var(--accent)'; }
+  else { dot.style.background='var(--accent2)'; text.textContent=`信頼度：低（SNR: ${snr.toFixed(1)}）`; text.style.color='var(--accent2)'; }
+}
+function showAlert(title, body) {
+  document.getElementById('alertTitle').textContent=title;
+  document.getElementById('alertBody').textContent=body;
+  document.getElementById('alertBlock').style.display='block';
+}
+function hideAlert() { document.getElementById('alertBlock').style.display='none'; }
 
-  // リセット
-  document.getElementById('logBox').innerHTML       = '';
-  document.getElementById('resultCard').style.display = 'none';
-  document.getElementById('errBanner').style.display  = 'none';
-  document.getElementById('analyzeBtn').disabled    = true;
-  document.getElementById('progWrap').style.display = 'block';
-  setProgress(0, '準備中...');
-
-  const duration  = videoEl.duration;
-  const WIN       = 3.0;   // 粗スキャン窓（秒）
-  const COARSE_N  = 60;    // 粗スキャンサンプル数
-  const FINE_WIN  = 0.6;   // 精密スキャン窓（秒）
-  const FINE_N    = 54;    // 精密スキャンサンプル数（≒11ms解像度）
-
-  const startSec = Math.min(Math.max(0, duration/2 - WIN/2), Math.max(0, duration - WIN));
-  const endSec   = Math.min(startSec + WIN, duration);
-
-  log(`窓: ${startSec.toFixed(1)}s〜${endSec.toFixed(1)}s`, 'info');
-
-  // PHASE 1: 粗スキャン INPUT
-  setProgress(5, 'INPUT スキャン中... (1/4)');
-  const { scores: cIn, times: tcIn } = await captureScores(rectIn,  startSec, endSec, COARSE_N);
-  log(`INPUT粗スキャン: ${cIn.length}サンプル`, cIn.length > 5 ? 'ok' : 'warn');
-
-  // PHASE 2: 粗スキャン OUTPUT
-  setProgress(25, 'OUTPUT スキャン中... (2/4)');
-  const { scores: cOut, times: tcOut } = await captureScores(rectOut, startSec, endSec, COARSE_N);
-  log(`OUTPUT粗スキャン: ${cOut.length}サンプル`, cOut.length > 5 ? 'ok' : 'warn');
-
-  if (cIn.length < 5 || cOut.length < 5) {
-    log('フレーム取得に失敗しました。再度お試しください。', 'warn');
-    document.getElementById('analyzeBtn').disabled = false;
+// ── ANALYZE ──
+async function analyze(){
+  if(!videoEl)return;
+  if(!rectIn||!rectOut){
+    showAlert('⚠ エリア選択が必要です','INPUT・OUTPUT両方の矩形を選択してからANALYZEを押してください。');
     return;
   }
 
-  // 粗カット位置の特定
-  const roughIn  = detectCut(cIn);
-  const roughOut = detectCut(cOut);
-  const coarseStep = (endSec - startSec) / COARSE_N;
-  const roughInSec  = tcIn[roughIn.idx]   ?? (startSec + roughIn.idx  * coarseStep);
-  const roughOutSec = tcOut[roughOut.idx] ?? (startSec + roughOut.idx * coarseStep);
-  log(`粗カット位置 IN: ${roughInSec.toFixed(2)}s / OUT: ${roughOutSec.toFixed(2)}s`, 'info');
+  document.getElementById('logBox').innerHTML='';
+  hideAlert();
+  document.getElementById('graphWrap').style.display='none';
+  setResultCells('—','—','—'); setConf(null);
+  document.getElementById('analyzeBtn').disabled=true;
+  document.getElementById('s3').classList.add('active');
+  setProgress(1,'スキャン準備中...');
 
-  // PHASE 3: 精密スキャン INPUT
-  setProgress(50, 'INPUT 精密スキャン中... (3/4)');
-  const fInS = Math.max(0,        roughInSec  - FINE_WIN/2);
-  const fInE = Math.min(duration, roughInSec  + FINE_WIN/2);
-  const { scores: fIn, times: tfIn } = await captureScores(rectIn,  fInS, fInE, FINE_N);
-  const fineStep = (fInE - fInS) / FINE_N;
-  log(`INPUT精密: ${fIn.length}サンプル / 解像度≒${(fineStep*1000).toFixed(0)}ms`, 'ok');
+  const dur=videoEl.duration;
+  const WIN=3.0,CN=60,FW=0.6,FN=54;
+  const s0=Math.min(Math.max(0,dur/2-WIN/2),Math.max(0,dur-WIN));
+  const e0=Math.min(s0+WIN,dur);
+  log(`窓: ${s0.toFixed(1)}s〜${e0.toFixed(1)}s`,'info');
 
-  // PHASE 4: 精密スキャン OUTPUT
-  setProgress(72, 'OUTPUT 精密スキャン中... (4/4)');
-  const fOutS = Math.max(0,        roughOutSec - FINE_WIN/2);
-  const fOutE = Math.min(duration, roughOutSec + FINE_WIN/2);
-  const { scores: fOut, times: tfOut } = await captureScores(rectOut, fOutS, fOutE, FINE_N);
-  log(`OUTPUT精密: ${fOut.length}サンプル / 解像度≒${(fineStep*1000).toFixed(0)}ms`, 'ok');
+  setProgress(5,'INPUT スキャン中...');
+  const {scores:cIn, times:tcIn} =await captureScores(rectIn, s0,e0,CN);
+  log(`INPUT粗スキャン: ${cIn.length}サンプル`,'ok');
 
-  // 精密カット位置の特定
-  setProgress(90, 'カットチェンジ精密検出中...');
-  await new Promise(r => setTimeout(r, 10));
+  setProgress(25,'OUTPUT スキャン中...');
+  const {scores:cOut,times:tcOut}=await captureScores(rectOut,s0,e0,CN);
+  log(`OUTPUT粗スキャン: ${cOut.length}サンプル`,'ok');
 
-  const cutIn  = detectCut(fIn);
-  const cutOut = detectCut(fOut);
-  const cutInSec  = tfIn[cutIn.idx]   ?? (fInS  + cutIn.idx  * fineStep);
-  const cutOutSec = tfOut[cutOut.idx] ?? (fOutS + cutOut.idx * fineStep);
-
-  log(`精密カット IN:  t=${cutInSec.toFixed(3)}s  (score=${cutIn.score.toFixed(2)}, SNR=${cutIn.snr.toFixed(1)})`, 'ok');
-  log(`精密カット OUT: t=${cutOutSec.toFixed(3)}s (score=${cutOut.score.toFixed(2)}, SNR=${cutOut.snr.toFixed(1)})`, 'ok');
-
-  const snr = Math.min(cutIn.snr, cutOut.snr);
-
-  // SNR低い場合はエラーバナー表示
-  if (snr < 2.0) {
-    log(`SNR低下 (${snr.toFixed(1)}) — カットチェンジが不明確です`, 'warn');
-    setProgress(100, '完了（要確認）');
-    document.getElementById('errBanner').style.display = 'block';
-    document.getElementById('resultCard').style.display = 'block';
-    document.getElementById('r30').textContent = '—';
-    document.getElementById('rMs').textContent = '—';
-    document.getElementById('confText').textContent = '低 — カットチェンジ不明確';
-    document.getElementById('confText').style.color = 'var(--accent2)';
-    document.getElementById('confSnr').textContent  = `SNR: ${snr.toFixed(1)}`;
-    document.getElementById('analyzeBtn').disabled = false;
-    return;
+  if(cIn.length<5||cOut.length<5){
+    showAlert('⚠ フレーム取得失敗','動画を再度アップロードしてお試しください。');
+    document.getElementById('analyzeBtn').disabled=false; return;
   }
 
-  // ズレ計算
-  const lagSec = cutOutSec - cutInSec;
-  const lagMs  = Math.round(Math.abs(lagSec) * 1000);
-  const lagF30 = Math.round(Math.abs(lagSec) * 30);
+  const rIn=detectCut(cIn),rOut=detectCut(cOut);
+  const cs=(e0-s0)/CN;
+  const rIs=tcIn[rIn.idx]??(s0+rIn.idx*cs), rOs=tcOut[rOut.idx]??(s0+rOut.idx*cs);
+  log(`粗カット IN: ${rIs.toFixed(2)}s / OUT: ${rOs.toFixed(2)}s`,'info');
 
-  log(`SNR: IN=${cutIn.snr.toFixed(1)}, OUT=${cutOut.snr.toFixed(1)}`, 'info');
-  log(`ズレ: ${lagSec.toFixed(3)}s = ${lagMs}ms`, 'ok');
-  log(`30fps換算: ${lagF30}フレーム`, 'ok');
+  setProgress(50,'INPUT 精密スキャン中...');
+  const fIs=Math.max(0,rIs-FW/2), fIe=Math.min(dur-0.1,rIs+FW/2);
+  const {scores:fIn, times:tfIn} =await captureScores(rectIn, fIs,fIe,FN);
+  const fsI=(fIe-fIs)/FN;
+  log(`INPUT精密: ${fIn.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度`,'ok');
 
-  // 結果表示
-  setProgress(100, '完了');
-  document.getElementById('r30').textContent  = lagF30;
-  document.getElementById('rMs').textContent  = lagMs;
-  showConf(snr);
-  drawGraph(cutIn.diffs, cutOut.diffs, cutIn.idx-1, cutOut.idx-1);
-  document.getElementById('resultCard').style.display = 'block';
-  document.getElementById('analyzeBtn').disabled = false;
+  setProgress(72,'OUTPUT 精密スキャン中...');
+  const fOs=Math.max(0,rOs-FW/2), fOe=Math.min(dur-0.1,rOs+FW/2);
+  const {scores:fOut,times:tfOut}=await captureScores(rectOut,fOs,fOe,FN);
+  const fsO=(fOe-fOs)/FN;
+  log(`OUTPUT精密: ${fOut.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度`,'ok');
+
+  if(fIn.length<3||fOut.length<3){
+    showAlert('⚠ サンプル不足','動画が短すぎる可能性があります。');
+    document.getElementById('analyzeBtn').disabled=false; return;
+  }
+
+  setProgress(90,'カット位置を特定中...');
+  await new Promise(r=>setTimeout(r,10));
+
+  const cI=detectCut(fIn),cO=detectCut(fOut);
+  const cIs=tfIn[cI.idx]??(fIs+cI.idx*fsI), cOs=tfOut[cO.idx]??(fOs+cO.idx*fsO);
+  log(`精密カット IN:  t=${cIs.toFixed(3)}s  SNR=${cI.snr.toFixed(1)}`,'ok');
+  log(`精密カット OUT: t=${cOs.toFixed(3)}s SNR=${cO.snr.toFixed(1)}`,'ok');
+
+  const snr=Math.min(cI.snr,cO.snr);
+  if(snr<2.0){
+    log(`SNR低下(${snr.toFixed(1)}) — カットチェンジが不明確です`,'warn');
+    showAlert('⚠ カットチェンジが検出できませんでした','映像にカメラスイッチが含まれていないか、変化が小さすぎる可能性があります。撮影時に必ず1回カメラスイッチを入れてから再撮影してください。');
+    setConf(snr);
+    setProgress(100); document.getElementById('analyzeBtn').disabled=false; return;
+  }
+
+  const lagSec=cOs-cIs;
+  const lagMs=Math.round(Math.abs(lagSec)*1000);
+  const lagF30=Math.round(Math.abs(lagSec)*30);
+  const lagF60=Math.round(Math.abs(lagSec)*60);
+  log(`ズレ: ${lagSec.toFixed(3)}s = ${lagMs}ms`,'ok');
+  log(`30fps換算: ${lagF30}f / 60fps換算: ${lagF60}f`,'ok');
+
+  setProgress(100);
+  setResultCells(lagF30, lagF60, lagMs);
+  setConf(snr);
+  drawGraph(cI.diffs,cO.diffs,cI.idx-1,cO.idx-1);
+  document.getElementById('graphWrap').style.display='block';
+  document.getElementById('s3').classList.remove('active');
   document.getElementById('s3').classList.add('done');
+  document.getElementById('analyzeBtn').disabled=false;
 }
 
-// ================================================================
-// CONFIDENCE
-// ================================================================
-function showConf(snr) {
-  const el = document.getElementById('confText');
-  document.getElementById('confSnr').textContent = `SNR: ${snr.toFixed(1)}`;
-  if (snr >= 5) {
-    el.textContent = '高 — カットチェンジが明確に検出されました';
-    el.style.color = 'var(--ok)';
-  } else if (snr >= 2) {
-    el.textContent = '中 — カットチェンジを検出。参考値として使用可';
-    el.style.color = 'var(--accent)';
-  } else {
-    el.textContent = '低 — カットチェンジが不明確';
-    el.style.color = 'var(--accent2)';
-  }
-}
-
-// ================================================================
-// GRAPH
-// ================================================================
-function drawGraph(diffsIn, diffsOut, peakIn, peakOut) {
-  const canvas = document.getElementById('graphCanvas');
-  canvas.width = canvas.parentElement.clientWidth - 20;
-  const W = canvas.width, H = canvas.height;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, W, H);
-  const maxV = Math.max(...diffsIn, ...diffsOut) || 1;
-  const n    = Math.max(diffsIn.length, diffsOut.length);
-
-  const drawLine = (diffs, color, peak) => {
+// ── GRAPH ──
+function drawGraph(dI,dO,pI,pO){
+  const c=document.getElementById('graphCanvas');
+  c.width=c.parentElement.clientWidth;
+  const W=c.width,H=c.height,ctx=c.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const maxV=Math.max(...dI,...dO)||1, n=Math.max(dI.length,dO.length);
+  const dl=(d,col,pk)=>{
     ctx.beginPath();
-    diffs.forEach((v,i) => {
-      const x = (i/(n-1))*W, y = H-(v/maxV)*(H-6);
-      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-    });
-    ctx.strokeStyle = color+'66'; ctx.lineWidth = 1.5; ctx.stroke();
-    if (peak >= 0 && peak < diffs.length) {
-      const px = (peak/(n-1))*W, py = H-(diffs[peak]/maxV)*(H-6);
-      ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2);
-      ctx.fillStyle = color; ctx.fill();
-      ctx.strokeStyle = color; ctx.lineWidth=1;
-      ctx.setLineDash([3,3]);
-      ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke();
-      ctx.setLineDash([]);
+    d.forEach((v,i)=>{ const x=(i/(n-1))*W,y=H-(v/maxV)*(H-4); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.strokeStyle=col+'88'; ctx.lineWidth=1.5; ctx.stroke();
+    if(pk>=0&&pk<d.length){
+      const px=(pk/(n-1))*W,py=H-(d[pk]/maxV)*(H-4);
+      ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
+      ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([2,3]);
+      ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke(); ctx.setLineDash([]);
     }
   };
-
-  drawLine(diffsIn,  '#5aaeff', peakIn);
-  drawLine(diffsOut, '#ff8c42', peakOut);
+  dl(dI,'#5aaeff',pI); dl(dO,'#ff8c42',pO);
 }
 </script>
 </body>
