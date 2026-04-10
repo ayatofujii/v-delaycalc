@@ -165,7 +165,7 @@ header {
 .rbtn.out .dot { background: #ff4f83; }
 .rbtn.inp { background: #001a1a; color: #ffffff; border-color: #00ffff; }
 .rbtn.out { background: #1a0010; color: #ffffff; border-color: #ff4f83; }
-.rbtn.active   { box-shadow: 0 0 6px currentColor; }
+.rbtn.active   { }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
   font-family: var(--mono); font-size: 13px;
@@ -338,6 +338,18 @@ header {
 .sys-val {
   font-family: var(--mono); font-size: 12px;
   color: var(--text); line-height: 1.6;
+}
+
+/* ── FOOTER ── */
+footer {
+  padding: 24px 16px 32px;
+  text-align: center;
+}
+.credit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  letter-spacing: 0.12em;
 }
 </style>
 </head>
@@ -535,6 +547,10 @@ header {
 
 </div><!-- /page -->
 
+<footer>
+  <div class="credit">designed &amp; built by Ayato Fujii</div>
+</footer>
+
 <script>
 'use strict';
 
@@ -678,7 +694,7 @@ function dr(ctx,r,color,label,dashed=false,labelColor='#ffffff'){
   ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2;
   if(dashed) ctx.setLineDash([4,4]);
   ctx.strokeRect(r.x,r.y,r.w,r.h);
-  ctx.fillStyle=color+'1a'; ctx.fillRect(r.x,r.y,r.w,r.h);
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(r.x,r.y,r.w,r.h);
   if(label){ ctx.fillStyle=labelColor; ctx.font='bold 11px DM Mono,monospace'; ctx.fillText(label,r.x+4,r.y+14); }
   ctx.restore();
 }
