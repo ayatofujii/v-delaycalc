@@ -8,11 +8,11 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
 :root {
-  --bg:      #1a1a1a;
-  --surface: #141414;
-  --card:    #111111;
-  --border:  #2a2a2a;
-  --border2: #383838;
+  --bg:      #2e2e2e;
+  --surface: #262626;
+  --card:    #222222;
+  --border:  #3a3a3a;
+  --border2: #484848;
   --accent:  #e8ff47;
   --accent2: #ff4747;
   --ok:      #47ffb2;
@@ -24,9 +24,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html {
-  background: #1a1a1a;
-}
+html { background: #2e2e2e; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -65,7 +63,11 @@ header {
   border-radius: 6px;
   background: var(--card);
   overflow: hidden;
+  transition: border-color 0.2s;
 }
+.block.is-active { border-color: var(--accent); }
+.block.is-done   { border-color: var(--ok); }
+
 .block-head {
   display: flex;
   align-items: center;
@@ -74,6 +76,7 @@ header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
+/* デフォルト：グレー */
 .step-num {
   font-family: var(--mono);
   font-size: 10px;
@@ -84,7 +87,9 @@ header {
   border-radius: 3px; flex-shrink: 0;
   transition: all 0.2s;
 }
+/* 現在位置：黄緑 */
 .step-num.active { border-color: var(--accent); color: var(--accent); }
+/* 完了：緑 */
 .step-num.done   { border-color: var(--ok);     color: var(--ok); }
 .block-title {
   font-family: var(--mono);
@@ -136,7 +141,7 @@ header {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 8px;
 }
-.cv-ph-icon { font-size: 32px; opacity: 0.08; }
+.cv-ph-icon { font-size: 32px; opacity: 0.45; }
 .cv-ph-text { font-family: var(--mono); font-size: 10px; color: var(--mid); text-align: center; line-height: 1.9; }
 
 .ctrl-row {
@@ -414,23 +419,20 @@ header {
     </div>
   </div>
 
-  <!-- 📷 撮影時の注意（折りたたみ） -->
+  <!-- 撮影時の注意（常時表示） -->
   <div class="block">
-    <div class="collapsible-head" onclick="toggleSection('noticeBody','noticeIcon')">
-      <div class="step-num" style="border-color:var(--border2);color:var(--mid);font-size:11px;">📷</div>
+    <div class="block-head">
+      <div class="step-num">!</div>
       <div class="block-title">撮影時の注意</div>
-      <div class="toggle-icon" id="noticeIcon">▼</div>
     </div>
-    <div class="collapsible-body open" id="noticeBody">
-      <div class="notice-text">
-        <b>撮影方法：</b><br>
-        入力画面と出力画面が同じ画角に収まるよう横向きで撮影してください。<br><br>
-        <b>カットチェンジについて：</b><br>
-        解析精度を上げるため、<b>撮影中に必ず1回カメラスイッチ（カットチェンジ）を入れてください。</b>
-        カットチェンジの瞬間を基準点としてズレ量を算出します。<br><br>
-        <b>iPhoneでの撮影：</b><br>
-        設定 → カメラ → フォーマット → 「互換性優先」を選択してH.264で撮影してください。
-      </div>
+    <div class="notice-text">
+      <b>撮影方法：</b><br>
+      入力画面と出力画面が同じ画角に収まるよう横向きで撮影してください。<br><br>
+      <b>カットチェンジについて：</b><br>
+      解析精度を上げるため、<b>撮影中に必ず1回カメラスイッチ（カットチェンジ）を入れてください。</b>
+      カットチェンジの瞬間を基準点としてズレ量を算出します。<br><br>
+      <b>iPhoneでの撮影：</b><br>
+      設定 → カメラ → フォーマット → 「互換性優先」を選択してH.264で撮影してください。
     </div>
   </div>
 
@@ -458,11 +460,15 @@ header {
 let videoEl=null, rectIn=null, rectOut=null;
 let drawMode='input', isDrag=false, dragStart=null, tempRect=null;
 
-// ── TOGGLE ──
-function toggleSection(bodyId, iconId) {
-  const b=document.getElementById(bodyId), i=document.getElementById(iconId);
-  b.classList.toggle('open');
-  i.textContent=b.classList.contains('open')?'▼':'▶';
+function setStep(num, state) {
+  // state: 'active' | 'done' | ''
+  const sn = document.getElementById('s'+num);
+  const bl = sn ? sn.closest('.block') : null;
+  if (!sn) return;
+  sn.classList.remove('active','done');
+  if (bl) { bl.classList.remove('is-active','is-done'); }
+  if (state === 'active') { sn.classList.add('active'); if(bl) bl.classList.add('is-active'); }
+  if (state === 'done')   { sn.classList.add('done');   if(bl) bl.classList.add('is-done'); }
 }
 
 // ── LOG ──
@@ -512,8 +518,7 @@ function loadVideo(file) {
     t.className='upload-text ok';
     t.innerHTML=`<b>${file.name}</b>${videoEl.duration.toFixed(1)}s / ${(file.size/1024/1024).toFixed(1)}MB`;
     zone.classList.add('loaded');
-    document.getElementById('s1').classList.remove('active');
-    document.getElementById('s1').classList.add('done');
+    setStep(1,'done');
     gotoMid();
   });
   videoEl.addEventListener('error', ()=>{
@@ -540,7 +545,8 @@ function renderFrame() {
   canvas.getContext('2d').drawImage(videoEl,0,0,canvas.width,canvas.height);
   document.getElementById('cvPH').style.display='none';
   setupCanvas(canvas);
-  document.getElementById('s2').classList.add('active');
+  setStep(1,'done');
+  setStep(2,'active');
   document.getElementById('analyzeBtn').disabled=false;
 }
 
@@ -667,7 +673,7 @@ async function analyze(){
   document.getElementById('graphWrap').style.display='none';
   setResultCells('—','—','—'); setConf(null);
   document.getElementById('analyzeBtn').disabled=true;
-  document.getElementById('s3').classList.add('active');
+  setStep(3,'active');
   setProgress(1,'スキャン準備中...');
 
   const dur=videoEl.duration;
@@ -739,8 +745,8 @@ async function analyze(){
   setConf(snr);
   drawGraph(cI.diffs,cO.diffs,cI.idx-1,cO.idx-1);
   document.getElementById('graphWrap').style.display='block';
-  document.getElementById('s3').classList.remove('active');
-  document.getElementById('s3').classList.add('done');
+  setStep(2,'done');
+  setStep(3,'done');
   document.getElementById('analyzeBtn').disabled=false;
 }
 
