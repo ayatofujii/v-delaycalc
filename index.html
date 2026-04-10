@@ -43,9 +43,9 @@ header {
   background: var(--bg);
   position: sticky; top: 0; z-index: 10;
 }
-.logo { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
+.logo { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
 .logo-sep { color: var(--accent); font-weight: 300; }
-.ver { font-family: var(--mono); font-size: 14px; color: var(--mid); letter-spacing: 0.1em; }
+.ver { font-family: var(--mono); font-size: 11px; color: var(--mid); letter-spacing: 0.1em; }
 
 /* ── PAGE ── */
 .page {
@@ -449,11 +449,11 @@ footer {
     <div class="graph-wrap" id="graphWrap">
       <div class="g-label">CHANGE-SCORE TIMELINE</div>
       <div class="g-row">
-        <div class="g-row-label" style="color:#ffffff">● INPUT</div>
+        <div class="g-row-label"><span style="color:#00ffff">●</span> <span style="color:#ffffff">INPUT</span></div>
         <canvas class="g-canvas" id="graphCanvasIn" height="52"></canvas>
       </div>
       <div class="g-row">
-        <div class="g-row-label" style="color:#ffffff">● OUTPUT</div>
+        <div class="g-row-label"><span style="color:#ff4f83">●</span> <span style="color:#ffffff">OUTPUT</span></div>
         <canvas class="g-canvas" id="graphCanvasOut" height="52"></canvas>
       </div>
     </div>
