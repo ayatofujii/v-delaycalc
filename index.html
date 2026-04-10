@@ -541,7 +541,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.5</div>
+        <div class="sys-val">v-delayCalc 0.1.6</div>
       </div>
     </div>
   </div>
@@ -1027,8 +1027,17 @@ async function analyze(){
   setProgress(100);
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
+
+  // グラフ用：粗スキャンのdiffsを共通時間軸で使用
+  // ピーク位置は精密スキャンで求めた時刻を粗スキャンのインデックスに変換
+  const coarseDiffsIn  = detectCut(cIn).diffs;
+  const coarseDiffsOut = detectCut(cOut).diffs;
+  const coarseStep = (e0 - s0) / CN;
+  const peakInCoarse  = Math.round((cIs - s0) / coarseStep) - 1;
+  const peakOutCoarse = Math.round((cOs - s0) / coarseStep) - 1;
+
   document.getElementById('graphWrap').style.display='block';
-  setTimeout(()=>drawGraph(cI.diffs, cO.diffs, cI.idx-1, cO.idx-1), 50);
+  setTimeout(()=>drawGraph(coarseDiffsIn, coarseDiffsOut, peakInCoarse, peakOutCoarse), 50);
   setStep(2,'done');
   setStep(3,'done');
   document.getElementById('analyzeBtn').disabled=false;
@@ -1036,9 +1045,8 @@ async function analyze(){
 
 // ── GRAPH ──
 function drawGraph(dI, dO, pI, pO) {
-  // INPUT・OUTPUTをそれぞれ独立スケールで2段描画
-  // タイムラインは共通（粗スキャン60サンプル分の幅）
-  // INPUTスパイクは左寄り、OUTPUTスパイクは右寄りになる
+  // 共通時間軸（粗スキャン）でINPUT・OUTPUTを2段描画
+  // ルート変換でスパイク以外の変化も見えるようにする
 
   function drawSingle(canvasId, diffs, peak, color) {
     const c = document.getElementById(canvasId);
@@ -1048,52 +1056,48 @@ function drawGraph(dI, dO, pI, pO) {
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, W, H);
 
-    // 背景グリッド線（薄く）
-    ctx.strokeStyle = '#222222';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, H/2); ctx.lineTo(W, H/2);
-    ctx.stroke();
+    // ルート変換（スパイク以外の微細変化を見えるようにする）
+    const transformed = diffs.map(v => Math.sqrt(v));
+    const maxV = Math.max(...transformed) || 1;
+    const n = transformed.length;
 
-    const maxV = Math.max(...diffs) || 1;
-    const n = diffs.length;
-
-    // 折れ線
-    ctx.beginPath();
-    diffs.forEach((v, i) => {
-      const x = (i / (n - 1)) * W;
-      const y = H - (v / maxV) * (H - 6);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    // 折れ線＋塗りつぶし
+    const getXY = i => ({
+      x: (i / (n - 1)) * W,
+      y: H - (transformed[i] / maxV) * (H - 8)
     });
-    ctx.strokeStyle = color + 'aa';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
 
-    // 塗りつぶし（グラデーション）
+    // 塗りつぶし
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, color + '33');
+    grad.addColorStop(0, color + '44');
     grad.addColorStop(1, color + '00');
     ctx.beginPath();
-    diffs.forEach((v, i) => {
-      const x = (i / (n - 1)) * W;
-      const y = H - (v / maxV) * (H - 6);
+    transformed.forEach((_, i) => {
+      const {x, y} = getXY(i);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
     ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
 
+    // 折れ線
+    ctx.beginPath();
+    transformed.forEach((_, i) => {
+      const {x, y} = getXY(i);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color + 'cc';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
     // スパイクマーカー
-    if (peak >= 0 && peak < diffs.length) {
-      const px = (peak / (n - 1)) * W;
-      const py = H - (diffs[peak] / maxV) * (H - 6);
-      // 垂直破線
-      ctx.strokeStyle = color + '66';
+    if (peak >= 0 && peak < transformed.length) {
+      const {x: px, y: py} = getXY(peak);
+      ctx.strokeStyle = color + '88';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
       ctx.setLineDash([]);
-      // ドット
       ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
       ctx.fillStyle = color; ctx.fill();
       ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
