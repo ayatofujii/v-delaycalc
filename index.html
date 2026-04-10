@@ -708,9 +708,9 @@ function toVC(r){
 // フレームスコア取得（カラーヒストグラム + エッジ量の複合）
 // ================================================================
 
-// 64×64にリサイズしてピクセルデータを取得
+// 32×32にリサイズしてピクセルデータを取得（64×64は過剰で低速）
 function getPixels(ctx, vr) {
-  const SZ = 64;
+  const SZ = 32;
   const t = document.createElement('canvas');
   t.width = SZ; t.height = SZ;
   t.getContext('2d').drawImage(ctx.canvas, vr.x, vr.y, vr.w, vr.h, 0, 0, SZ, SZ);
@@ -725,30 +725,29 @@ function toLumArray(data, sz) {
   return lum;
 }
 
-// カラーヒストグラム（RGB各16bin = 計48bin）を生成
+// カラーヒストグラム（RGB各16bin）
 function toHistogram(data, sz) {
-  const bins = 16;
+  const bins = 16, total = sz * sz;
   const r = new Float32Array(bins);
   const g = new Float32Array(bins);
   const b = new Float32Array(bins);
-  const total = sz * sz;
   for (let i = 0; i < total; i++) {
-    r[Math.min(bins-1, data[i*4]   >> 4)]++;
-    g[Math.min(bins-1, data[i*4+1] >> 4)]++;
-    b[Math.min(bins-1, data[i*4+2] >> 4)]++;
+    r[data[i*4]   >> 4]++;
+    g[data[i*4+1] >> 4]++;
+    b[data[i*4+2] >> 4]++;
   }
   for (let i = 0; i < bins; i++) { r[i]/=total; g[i]/=total; b[i]/=total; }
   return { r, g, b };
 }
 
-// エッジ量（ソーベルフィルタ）
+// エッジ量（sqrtなし近似版・高速）
 function edgeScore(lum, sz) {
   let sum = 0;
   for (let y = 1; y < sz-1; y++) {
     for (let x = 1; x < sz-1; x++) {
       const gx = lum[y*sz+(x+1)] - lum[y*sz+(x-1)];
       const gy = lum[(y+1)*sz+x] - lum[(y-1)*sz+x];
-      sum += Math.sqrt(gx*gx + gy*gy);
+      sum += Math.abs(gx) + Math.abs(gy); // sqrt省略
     }
   }
   return sum / ((sz-2)*(sz-2));
@@ -774,7 +773,7 @@ function scoreDiff(a, b) {
     histDiff += Math.abs(a.hist.g[i] - b.hist.g[i]);
     histDiff += Math.abs(a.hist.b[i] - b.hist.b[i]);
   }
-  histDiff /= 3; // RGB平均
+  histDiff /= 3;
 
   // ② エッジ量の変化（正規化）
   const edgeDiff = Math.abs(a.edge - b.edge) / (Math.max(a.edge, b.edge, 1));
@@ -782,7 +781,6 @@ function scoreDiff(a, b) {
   // ③ 輝度平均の変化（正規化）
   const lumDiff = Math.abs(a.mean - b.mean) / 255;
 
-  // 重み付き合成
   return histDiff * 0.55 + edgeDiff * 0.35 + lumDiff * 0.10;
 }
 
