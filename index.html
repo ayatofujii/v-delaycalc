@@ -766,7 +766,7 @@ async function analyze(){
   setProgress(1,'スキャン準備中...');
 
   const dur=videoEl.duration;
-  const WIN=3.0,CN=60,FW=0.6,FN=54;
+  const WIN=3.0, CN=60, FW=1.2, FN=54;  // FW: ±0.6s（合計1.2s窓）
   const s0=Math.min(Math.max(0,dur/2-WIN/2),Math.max(0,dur-WIN));
   const e0=Math.min(s0+WIN,dur);
   log(`窓: ${s0.toFixed(1)}s〜${e0.toFixed(1)}s`,'info');
@@ -784,33 +784,50 @@ async function analyze(){
     document.getElementById('analyzeBtn').disabled=false; return;
   }
 
-  const rIn=detectCut(cIn),rOut=detectCut(cOut);
+  const rIn=detectCut(cIn), rOut=detectCut(cOut);
   const cs=(e0-s0)/CN;
-  const rIs=tcIn[rIn.idx]??(s0+rIn.idx*cs), rOs=tcOut[rOut.idx]??(s0+rOut.idx*cs);
+  const rIs=tcIn[rIn.idx]??(s0+rIn.idx*cs);
+  const rOs=tcOut[rOut.idx]??(s0+rOut.idx*cs);
   log(`粗カット IN: ${rIs.toFixed(2)}s / OUT: ${rOs.toFixed(2)}s`,'info');
 
   setProgress(50,'INPUT 精密スキャン中...');
-  const fIs=Math.max(0,rIs-FW/2), fIe=Math.min(dur-0.1,rIs+FW/2);
+  const fIs=Math.max(0, rIs-FW/2), fIe=Math.min(dur-0.2, rIs+FW/2);
   const {scores:fIn, times:tfIn} =await captureScores(rectIn, fIs,fIe,FN);
   const fsI=(fIe-fIs)/FN;
   log(`INPUT精密: ${fIn.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度`,'ok');
 
   setProgress(72,'OUTPUT 精密スキャン中...');
-  const fOs=Math.max(0,rOs-FW/2), fOe=Math.min(dur-0.1,rOs+FW/2);
+  const fOs=Math.max(0, rOs-FW/2), fOe=Math.min(dur-0.2, rOs+FW/2);
   const {scores:fOut,times:tfOut}=await captureScores(rectOut,fOs,fOe,FN);
   const fsO=(fOe-fOs)/FN;
   log(`OUTPUT精密: ${fOut.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度`,'ok');
 
-  if(fIn.length<3||fOut.length<3){
-    showAlert('⚠ サンプル不足','動画が短すぎる可能性があります。');
-    document.getElementById('analyzeBtn').disabled=false; return;
-  }
-
   setProgress(90,'カット位置を特定中...');
   await new Promise(r=>setTimeout(r,10));
 
-  const cI=detectCut(fIn),cO=detectCut(fOut);
-  const cIs=tfIn[cI.idx]??(fIs+cI.idx*fsI), cOs=tfOut[cO.idx]??(fOs+cO.idx*fsO);
+  // 精密スキャンで十分なサンプルが取れた場合は精密結果を使用
+  // サンプルが少ない場合は粗スキャン結果で代替
+  const MIN_FINE = 20;
+  let cIs, cOs, cI, cO;
+
+  if (fIn.length >= MIN_FINE) {
+    cI  = detectCut(fIn);
+    cIs = tfIn[cI.idx] ?? (fIs + cI.idx * fsI);
+  } else {
+    log(`INPUT精密サンプル不足 → 粗スキャン結果を使用`,'warn');
+    cI  = rIn;
+    cIs = rIs;
+  }
+
+  if (fOut.length >= MIN_FINE) {
+    cO  = detectCut(fOut);
+    cOs = tfOut[cO.idx] ?? (fOs + cO.idx * fsO);
+  } else {
+    log(`OUTPUT精密サンプル不足 → 粗スキャン結果を使用`,'warn');
+    cO  = rOut;
+    cOs = rOs;
+  }
+
   log(`精密カット IN:  t=${cIs.toFixed(3)}s  SNR=${cI.snr.toFixed(1)}`,'ok');
   log(`精密カット OUT: t=${cOs.toFixed(3)}s SNR=${cO.snr.toFixed(1)}`,'ok');
 
