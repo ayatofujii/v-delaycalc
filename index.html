@@ -312,6 +312,25 @@ header {
 #logBox .l-ok   { color: var(--ok); }
 #logBox .l-info { color: #6aa8cc; }
 #logBox .l-warn { color: #ffaa33; }
+
+/* ── SYSTEM INFO ── */
+.sys-info { padding: 4px 0; }
+.sys-row {
+  display: flex; gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+}
+.sys-row:last-child { border-bottom: none; }
+.sys-key {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--mid); letter-spacing: 0.06em;
+  white-space: nowrap; min-width: 100px; flex-shrink: 0;
+}
+.sys-val {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text); line-height: 1.6;
+}
 </style>
 </head>
 <body>
@@ -458,6 +477,48 @@ header {
         <button class="copy-btn" id="copyBtn" onclick="copyLog()">⎘ コピー</button>
       </div>
       <div id="logBox"></div>
+    </div>
+  </div>
+
+  <!-- システム情報 -->
+  <div class="block">
+    <div class="block-head">
+      <div class="step-num" style="border-color:var(--border2);color:var(--mid);">i</div>
+      <div class="block-title">システム情報</div>
+    </div>
+    <div class="sys-info">
+      <div class="sys-row">
+        <div class="sys-key">解析エンジン</div>
+        <div class="sys-val">2段階カットチェンジ検出</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">PHASE 1</div>
+        <div class="sys-val">粗スキャン — 動画全体を60サンプルでスキャンし、輝度変化の最大点（カットチェンジ）を特定</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">PHASE 2</div>
+        <div class="sys-val">精密スキャン — カット前後±0.3秒を54サンプルで再スキャン（解像度 ≒ 11ms）</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">算出方法</div>
+        <div class="sys-val">INPUT側カット時刻 − OUTPUT側カット時刻 = ズレ量</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">精度</div>
+        <div class="sys-val">理論値 ±11ms（≒ ±0.33フレーム @ 30fps）</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">信頼度指標</div>
+        <div class="sys-val">SNR（カットスコア ÷ 平均変化量）— 5以上で高信頼</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">動作環境</div>
+        <div class="sys-val">ブラウザ完結（外部サーバー送信なし）/ MP4・MOV 対応</div>
+      </div>
+      <div class="sys-row">
+        <div class="sys-key">VERSION</div>
+        <div class="sys-val">v-delayCalc 0.1.0</div>
+      </div>
     </div>
   </div>
 
