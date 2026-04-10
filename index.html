@@ -913,21 +913,21 @@ async function analyze(){
 
   setProgress(50,'INPUT 精密スキャン中...');
   let fIs = rIs - FW/2, fIe = rIs + FW/2;
-  // 終端オーバーフロー時は窓を前にシフト
   if (fIe > dur - 0.1) { fIe = dur - 0.1; fIs = Math.max(0, fIe - FW); }
   fIs = Math.max(0, fIs);
+  log(`INPUT精密窓: ${fIs.toFixed(2)}s〜${fIe.toFixed(2)}s`,'info');
   const {scores:fIn, times:tfIn} = await captureScores(rectIn, fIs, fIe, FN);
   const fsI = (fIe - fIs) / FN;
-  log(`INPUT精密: ${fIn.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度`,'ok');
+  log(`INPUT精密: ${fIn.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度 / 実範囲:${tfIn[0]?.toFixed(2)}s〜${tfIn[tfIn.length-1]?.toFixed(2)}s`,'ok');
 
   setProgress(72,'OUTPUT 精密スキャン中...');
   let fOs = rOs - FW/2, fOe = rOs + FW/2;
-  // 終端オーバーフロー時は窓を前にシフト
   if (fOe > dur - 0.1) { fOe = dur - 0.1; fOs = Math.max(0, fOe - FW); }
   fOs = Math.max(0, fOs);
+  log(`OUTPUT精密窓: ${fOs.toFixed(2)}s〜${fOe.toFixed(2)}s`,'info');
   const {scores:fOut, times:tfOut} = await captureScores(rectOut, fOs, fOe, FN);
   const fsO = (fOe - fOs) / FN;
-  log(`OUTPUT精密: ${fOut.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度`,'ok');
+  log(`OUTPUT精密: ${fOut.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度 / 実範囲:${tfOut[0]?.toFixed(2)}s〜${tfOut[tfOut.length-1]?.toFixed(2)}s`,'ok');
 
   setProgress(90,'カット位置を特定中...');
   await new Promise(r=>setTimeout(r,10));
