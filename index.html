@@ -540,7 +540,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.2</div>
+        <div class="sys-val">v-delayCalc 0.1.3</div>
       </div>
     </div>
   </div>
@@ -790,9 +790,9 @@ function captureScores(rect, s0, e0, N) {
     const off = document.createElement('canvas');
     off.width = videoEl.videoWidth; off.height = videoEl.videoHeight;
     const ctx = off.getContext('2d');
-    const scores=[], times=[];
+    const scores = [], times = [];
     const step = (e0 - s0) / N;
-    let nc = s0, rafId = null, started = false;
+    let nc = s0, rafId = null, started = false, stuckCount = 0, lastT = -1;
 
     const finish = () => {
       if (rafId) cancelAnimationFrame(rafId);
@@ -802,8 +802,22 @@ function captureScores(rect, s0, e0, N) {
 
     const tick = () => {
       const t = videoEl.currentTime;
-      // seekが完了していない場合（前の位置にいる）はスキップ
-      if (t < s0 - 0.1) { rafId = requestAnimationFrame(tick); return; }
+
+      // seekがまだ完了していない場合はスキップ
+      if (t < s0 - 0.05) { rafId = requestAnimationFrame(tick); return; }
+
+      // 再生が止まっていないか監視（同じ時刻が10フレーム以上続いたら再開）
+      if (t === lastT) {
+        stuckCount++;
+        if (stuckCount > 10) {
+          stuckCount = 0;
+          videoEl.play().catch(() => {});
+        }
+      } else {
+        stuckCount = 0;
+        lastT = t;
+      }
+
       while (scores.length < N && t >= nc - 0.005) {
         ctx.drawImage(videoEl, 0, 0);
         scores.push(getFrameScore(ctx, vr));
@@ -819,15 +833,14 @@ function captureScores(rect, s0, e0, N) {
       videoEl.playbackRate = 1;
       videoEl.play().catch(() => {});
       rafId = requestAnimationFrame(tick);
-      setTimeout(finish, Math.max(6000, (e0 - s0) * 2000 + 3000));
+      setTimeout(finish, Math.max(8000, (e0 - s0) * 3000 + 3000));
     };
 
     videoEl.pause();
     videoEl.muted = true;
     videoEl.currentTime = s0;
-    // seekedイベントと保険タイムアウトの両方で開始
     videoEl.addEventListener('seeked', startPlay, { once: true });
-    setTimeout(startPlay, 800);
+    setTimeout(startPlay, 1000);
   });
 }
 
