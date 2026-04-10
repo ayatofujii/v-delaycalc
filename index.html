@@ -29,7 +29,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 16px;
   min-height: 100vh;
 }
 
@@ -43,9 +43,9 @@ header {
   background: var(--bg);
   position: sticky; top: 0; z-index: 10;
 }
-.logo { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
+.logo { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
 .logo-sep { color: #333; font-weight: 300; }
-.ver { font-family: var(--mono); font-size: 9px; color: var(--mid); letter-spacing: 0.1em; }
+.ver { font-family: var(--mono); font-size: 14px; color: var(--mid); letter-spacing: 0.1em; }
 
 /* ── PAGE ── */
 .page {
@@ -79,7 +79,7 @@ header {
 /* デフォルト：グレー */
 .step-num {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 13px;
   color: var(--mid);
   border: 1px solid var(--border2);
   min-width: 22px; height: 22px;
@@ -93,7 +93,7 @@ header {
 .step-num.done   { border-color: var(--ok);     color: var(--ok); }
 .block-title {
   font-family: var(--mono);
-  font-size: 11px; font-weight: 500;
+  font-size: 14px; font-weight: 500;
   color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase;
 }
 .block-body { padding: 12px 14px; }
@@ -119,8 +119,8 @@ header {
 }
 .upload-zone.loaded .film-icon { color: var(--ok); opacity: 0.8; }
 
-.upload-text { font-family: var(--mono); font-size: 11px; color: var(--mid); line-height: 1.6; }
-.upload-text b { display: block; font-size: 12px; color: var(--text); margin-bottom: 2px; }
+.upload-text { font-family: var(--mono); font-size: 14px; color: var(--mid); line-height: 1.6; }
+.upload-text b { display: block; font-size: 14px; color: var(--text); margin-bottom: 2px; }
 .upload-text.ok b { color: var(--ok); }
 
 /* ── BLOCK 2: CANVAS + CONTROLS ── */
@@ -142,7 +142,7 @@ header {
   align-items: center; justify-content: center; gap: 8px;
 }
 .cv-ph-icon { font-size: 32px; opacity: 0.45; }
-.cv-ph-text { font-family: var(--mono); font-size: 10px; color: var(--mid); text-align: center; line-height: 1.9; }
+.cv-ph-text { font-family: var(--mono); font-size: 13px; color: var(--mid); text-align: center; line-height: 1.9; }
 
 .ctrl-row {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -152,7 +152,7 @@ header {
 }
 .rect-group { display: flex; gap: 6px; align-items: center; flex: 1; flex-wrap: wrap; }
 .rbtn {
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size: 13px;
   padding: 5px 10px; border-radius: 3px; cursor: pointer;
   border: 1px solid transparent;
   user-select: none; white-space: nowrap;
@@ -165,7 +165,7 @@ header {
 .rbtn.active   { box-shadow: 0 0 0 1px currentColor; }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size: 13px;
   background: transparent; color: var(--mid);
   border: 1px solid var(--border2); padding: 5px 8px;
   border-radius: 3px; cursor: pointer;
@@ -174,7 +174,7 @@ header {
 .rreset:hover { color: var(--text); }
 
 .analyze-btn {
-  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
   letter-spacing: 0.12em; text-transform: uppercase;
   background: var(--accent); color: #000;
   border: none; border-radius: 3px; cursor: pointer;
@@ -187,7 +187,7 @@ header {
 .prog { height: 2px; background: var(--border); display: none; }
 .prog-fill { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
 .prog-label {
-  font-family: var(--mono); font-size: 9px; color: var(--mid);
+  font-family: var(--mono); font-size: 14px; color: var(--mid);
   padding: 4px 14px; display: none; background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
@@ -207,7 +207,7 @@ header {
 }
 .result-cell.highlight { background: #0d1100; }
 .res-unit-label {
-  font-family: var(--mono); font-size: 9px; color: var(--mid);
+  font-family: var(--mono); font-size: 14px; color: var(--mid);
   letter-spacing: 0.1em; text-transform: uppercase;
   margin-bottom: 8px;
 }
@@ -220,12 +220,12 @@ header {
 .res-num.medium { font-size: 32px; }
 .res-num.filled { color: var(--accent); }
 .res-sub {
-  font-family: var(--mono); font-size: 10px; color: var(--mid);
+  font-family: var(--mono); font-size: 13px; color: var(--mid);
 }
 .conf-bar {
   padding: 10px 14px;
   border-top: 1px solid var(--border);
-  font-family: var(--mono); font-size: 10px; color: var(--mid);
+  font-family: var(--mono); font-size: 13px; color: var(--mid);
   display: flex; align-items: center; gap: 8px;
   background: var(--surface);
 }
@@ -242,7 +242,7 @@ header {
   background: var(--bg);
 }
 .g-label {
-  font-family: var(--mono); font-size: 9px; color: var(--mid);
+  font-family: var(--mono); font-size: 14px; color: var(--mid);
   letter-spacing: 0.08em; margin-bottom: 6px;
   display: flex; align-items: center; gap: 12px;
 }
@@ -255,7 +255,7 @@ header {
 }
 .alert-block .block-head { background: #1a0000; border-bottom-color: #400000; }
 .alert-body-text {
-  font-family: var(--mono); font-size: 11px; color: #ff9999; line-height: 1.9;
+  font-family: var(--mono); font-size: 14px; color: #ff9999; line-height: 1.9;
 }
 
 /* ── COLLAPSIBLE BLOCKS ── */
@@ -267,13 +267,13 @@ header {
   transition: background 0.12s;
 }
 .collapsible-head:hover { background: #111; }
-.toggle-icon { font-family: var(--mono); font-size: 10px; color: var(--mid); margin-left: auto; }
+.toggle-icon { font-family: var(--mono); font-size: 13px; color: var(--mid); margin-left: auto; }
 .collapsible-body { display: none; border-top: 1px solid var(--border); }
 .collapsible-body.open { display: block; }
 
 /* 注意事項 */
 .notice-text {
-  font-family: var(--mono); font-size: 10px; color: var(--mid);
+  font-family: var(--mono); font-size: 13px; color: var(--mid);
   line-height: 1.9; padding: 12px 14px;
 }
 .notice-text b { color: var(--text); }
@@ -284,9 +284,9 @@ header {
   padding: 10px 14px; background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.log-title { font-family: var(--mono); font-size: 9px; color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase; }
+.log-title { font-family: var(--mono); font-size: 14px; color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase; }
 .copy-btn {
-  font-family: var(--mono); font-size: 9px;
+  font-family: var(--mono); font-size: 14px;
   background: transparent; color: var(--mid);
   border: 1px solid var(--border2); padding: 3px 8px;
   border-radius: 2px; cursor: pointer;
@@ -296,7 +296,7 @@ header {
 .copy-btn:hover { color: var(--text); border-color: var(--mid); }
 .copy-btn.copied { color: var(--ok); border-color: var(--ok); }
 #logBox {
-  font-family: var(--mono); font-size: 10px;
+  font-family: var(--mono); font-size: 13px;
   background: var(--bg); padding: 10px 14px;
   line-height: 1.9; color: var(--mid);
   white-space: pre-wrap; word-break: break-all;
@@ -316,7 +316,7 @@ header {
 <div class="page">
 
   <!-- ① 動画アップロード -->
-  <div class="block">
+  <div class="block is-active" id="block1">
     <div class="block-head">
       <div class="step-num active" id="s1">1</div>
       <div class="block-title">動画アップロード</div>
@@ -338,7 +338,7 @@ header {
   </div>
 
   <!-- ② エリア選択 -->
-  <div class="block">
+  <div class="block" id="block2">
     <div class="block-head">
       <div class="step-num" id="s2">2</div>
       <div class="block-title">エリア選択</div>
@@ -366,7 +366,7 @@ header {
   </div>
 
   <!-- ③ 解析結果（最初から表示） -->
-  <div class="block">
+  <div class="block" id="block3">
     <div class="block-head">
       <div class="step-num" id="s3">3</div>
       <div class="block-title">解析結果</div>
@@ -395,7 +395,7 @@ header {
 
     <div class="conf-bar" id="confBar">
       <div class="conf-dot" id="confDot"></div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--mid);" id="confText">解析前</div>
+      <div style="font-family:var(--mono);font-size:13px;color:var(--mid);" id="confText">解析前</div>
     </div>
 
     <div class="graph-wrap" id="graphWrap">
@@ -439,7 +439,7 @@ header {
   <!-- ≡ 解析ログ（解析後に表示、折りたたみ） -->
   <div class="block" id="logBlock" style="display:none;">
     <div class="collapsible-head" onclick="toggleSection('logBody','logIcon')">
-      <div class="step-num" style="border-color:var(--border2);color:var(--mid);font-size:11px;">≡</div>
+      <div class="step-num" style="border-color:var(--border2);color:var(--mid);font-size:14px;">≡</div>
       <div class="block-title">解析ログ</div>
       <div class="toggle-icon" id="logIcon">▼</div>
     </div>
@@ -461,14 +461,19 @@ let videoEl=null, rectIn=null, rectOut=null;
 let drawMode='input', isDrag=false, dragStart=null, tempRect=null;
 
 function setStep(num, state) {
-  // state: 'active' | 'done' | ''
   const sn = document.getElementById('s'+num);
-  const bl = sn ? sn.closest('.block') : null;
+  const bl = document.getElementById('block'+num);
   if (!sn) return;
   sn.classList.remove('active','done');
-  if (bl) { bl.classList.remove('is-active','is-done'); }
-  if (state === 'active') { sn.classList.add('active'); if(bl) bl.classList.add('is-active'); }
-  if (state === 'done')   { sn.classList.add('done');   if(bl) bl.classList.add('is-done'); }
+  if (bl) bl.classList.remove('is-active','is-done');
+  if (state === 'active') {
+    sn.classList.add('active');
+    if (bl) bl.classList.add('is-active');
+  }
+  if (state === 'done') {
+    sn.classList.add('done');
+    if (bl) bl.classList.add('is-done');
+  }
 }
 
 // ── LOG ──
