@@ -704,13 +704,88 @@ function toVC(r){
   const c=document.getElementById('frameCanvas');
   return { x:Math.max(0,Math.round(r.x*videoEl.videoWidth/c.width)), y:Math.max(0,Math.round(r.y*videoEl.videoHeight/c.height)), w:Math.max(8,Math.round(r.w*videoEl.videoWidth/c.width)), h:Math.max(8,Math.round(r.h*videoEl.videoHeight/c.height)) };
 }
-function getLum(ctx,vr){
-  const t=document.createElement('canvas'); t.width=16; t.height=16;
-  t.getContext('2d').drawImage(ctx.canvas,vr.x,vr.y,vr.w,vr.h,0,0,16,16);
-  const d=t.getContext('2d').getImageData(0,0,16,16).data;
-  let s=0; for(let i=0;i<d.length;i+=4) s+=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-  return s/(16*16);
+// ================================================================
+// フレームスコア取得（カラーヒストグラム + エッジ量の複合）
+// ================================================================
+
+// 64×64にリサイズしてピクセルデータを取得
+function getPixels(ctx, vr) {
+  const SZ = 64;
+  const t = document.createElement('canvas');
+  t.width = SZ; t.height = SZ;
+  t.getContext('2d').drawImage(ctx.canvas, vr.x, vr.y, vr.w, vr.h, 0, 0, SZ, SZ);
+  return { data: t.getContext('2d').getImageData(0, 0, SZ, SZ).data, sz: SZ };
 }
+
+// 輝度配列を生成
+function toLumArray(data, sz) {
+  const lum = new Float32Array(sz * sz);
+  for (let i = 0; i < sz * sz; i++)
+    lum[i] = 0.299*data[i*4] + 0.587*data[i*4+1] + 0.114*data[i*4+2];
+  return lum;
+}
+
+// カラーヒストグラム（RGB各16bin = 計48bin）を生成
+function toHistogram(data, sz) {
+  const bins = 16;
+  const r = new Float32Array(bins);
+  const g = new Float32Array(bins);
+  const b = new Float32Array(bins);
+  const total = sz * sz;
+  for (let i = 0; i < total; i++) {
+    r[Math.min(bins-1, data[i*4]   >> 4)]++;
+    g[Math.min(bins-1, data[i*4+1] >> 4)]++;
+    b[Math.min(bins-1, data[i*4+2] >> 4)]++;
+  }
+  for (let i = 0; i < bins; i++) { r[i]/=total; g[i]/=total; b[i]/=total; }
+  return { r, g, b };
+}
+
+// エッジ量（ソーベルフィルタ）
+function edgeScore(lum, sz) {
+  let sum = 0;
+  for (let y = 1; y < sz-1; y++) {
+    for (let x = 1; x < sz-1; x++) {
+      const gx = lum[y*sz+(x+1)] - lum[y*sz+(x-1)];
+      const gy = lum[(y+1)*sz+x] - lum[(y-1)*sz+x];
+      sum += Math.sqrt(gx*gx + gy*gy);
+    }
+  }
+  return sum / ((sz-2)*(sz-2));
+}
+
+// フレームごとのスコアオブジェクトを返す
+function getFrameScore(ctx, vr) {
+  const { data, sz } = getPixels(ctx, vr);
+  const lum  = toLumArray(data, sz);
+  const hist = toHistogram(data, sz);
+  const edge = edgeScore(lum, sz);
+  const mean = lum.reduce((a,b)=>a+b,0) / lum.length;
+  return { hist, edge, mean };
+}
+
+// スコア間の差分（カットチェンジ度）を計算
+function scoreDiff(a, b) {
+  // ① カラーヒストグラム差分（RGB各L1距離の平均）
+  const bins = 16;
+  let histDiff = 0;
+  for (let i = 0; i < bins; i++) {
+    histDiff += Math.abs(a.hist.r[i] - b.hist.r[i]);
+    histDiff += Math.abs(a.hist.g[i] - b.hist.g[i]);
+    histDiff += Math.abs(a.hist.b[i] - b.hist.b[i]);
+  }
+  histDiff /= 3; // RGB平均
+
+  // ② エッジ量の変化（正規化）
+  const edgeDiff = Math.abs(a.edge - b.edge) / (Math.max(a.edge, b.edge, 1));
+
+  // ③ 輝度平均の変化（正規化）
+  const lumDiff = Math.abs(a.mean - b.mean) / 255;
+
+  // 重み付き合成
+  return histDiff * 0.55 + edgeDiff * 0.35 + lumDiff * 0.10;
+}
+
 function captureScores(rect,s0,e0,N){
   return new Promise(resolve=>{
     const vr=toVC(rect);
@@ -721,7 +796,7 @@ function captureScores(rect,s0,e0,N){
     const finish=()=>{ if(rafId)cancelAnimationFrame(rafId); videoEl.pause(); resolve({scores,times}); };
     const tick=()=>{
       const t=videoEl.currentTime;
-      while(scores.length<N&&t>=nc-0.005){ ctx.drawImage(videoEl,0,0); scores.push(getLum(ctx,vr)); times.push(t); nc+=step; }
+      while(scores.length<N&&t>=nc-0.005){ ctx.drawImage(videoEl,0,0); scores.push(getFrameScore(ctx,vr)); times.push(t); nc+=step; }
       if(scores.length>=N||t>=e0+0.15){ finish(); return; }
       rafId=requestAnimationFrame(tick);
     };
@@ -733,11 +808,11 @@ function captureScores(rect,s0,e0,N){
 
 // ── CUT DETECT ──
 function detectCut(scores, margin=5){
-  const diffs=scores.slice(1).map((v,i)=>Math.abs(v-scores[i]));
-  const avg=diffs.reduce((a,b)=>a+b,0)/diffs.length;
-  // 端からmargin個は除外（窓の端ノイズを誤検出しないため）
-  const lo=Math.min(margin, Math.floor(diffs.length*0.1));
-  const hi=Math.max(diffs.length-1-lo, lo+1);
+  // スコアオブジェクト間の差分を計算
+  const diffs = scores.slice(1).map((s, i) => scoreDiff(scores[i], s));
+  const avg = diffs.reduce((a,b)=>a+b,0) / diffs.length;
+  const lo = Math.min(margin, Math.floor(diffs.length*0.1));
+  const hi = Math.max(diffs.length-1-lo, lo+1);
   let mx=-Infinity, mi=lo;
   diffs.forEach((d,i)=>{ if(i>=lo && i<=hi && d>mx){mx=d;mi=i;} });
   return {idx:mi+1, score:mx, snr:mx/(avg||1), diffs};
@@ -808,7 +883,7 @@ async function analyze(){
   const cs=(e0-s0)/CN;
   const rIs=tcIn[rIn.idx]??(s0+rIn.idx*cs);
   const rOs=tcOut[rOut.idx]??(s0+rOut.idx*cs);
-  log(`粗カット IN: ${rIs.toFixed(2)}s / OUT: ${rOs.toFixed(2)}s`,'info');
+  log(`粗カット IN: ${rIs.toFixed(2)}s (SNR=${rIn.snr.toFixed(1)}) / OUT: ${rOs.toFixed(2)}s (SNR=${rOut.snr.toFixed(1)})`,'info');
 
   setProgress(50,'INPUT 精密スキャン中...');
   const fIs=Math.max(0, rIs-FW/2), fIe=Math.min(dur-0.2, rIs+FW/2);
