@@ -712,11 +712,15 @@ function captureScores(rect,s0,e0,N){
 }
 
 // ── CUT DETECT ──
-function detectCut(scores){
+function detectCut(scores, margin=5){
   const diffs=scores.slice(1).map((v,i)=>Math.abs(v-scores[i]));
-  let mx=-Infinity,mi=0; diffs.forEach((d,i)=>{ if(d>mx){mx=d;mi=i;} });
   const avg=diffs.reduce((a,b)=>a+b,0)/diffs.length;
-  return {idx:mi+1,score:mx,snr:mx/(avg||1),diffs};
+  // 端からmargin個は除外（窓の端ノイズを誤検出しないため）
+  const lo=Math.min(margin, Math.floor(diffs.length*0.1));
+  const hi=Math.max(diffs.length-1-lo, lo+1);
+  let mx=-Infinity, mi=lo;
+  diffs.forEach((d,i)=>{ if(i>=lo && i<=hi && d>mx){mx=d;mi=i;} });
+  return {idx:mi+1, score:mx, snr:mx/(avg||1), diffs};
 }
 
 // ── RESULT ──
