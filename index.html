@@ -160,9 +160,11 @@ header {
   transition: all 0.12s;
   width: 100px;
 }
-.rbtn .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.rbtn.inp { background: #001a1a; color: #00ffff; border-color: #00ffff; }
-.rbtn.out { background: #1a0010; color: #ff4f83; border-color: #ff4f83; }
+.rbtn .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.rbtn.inp .dot { background: #00ffff; }
+.rbtn.out .dot { background: #ff4f83; }
+.rbtn.inp { background: #001a1a; color: #ffffff; border-color: #00ffff; }
+.rbtn.out { background: #1a0010; color: #ffffff; border-color: #ff4f83; }
 .rbtn.active   { box-shadow: 0 0 6px currentColor; }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
@@ -352,7 +354,7 @@ header {
   <div class="block is-active" id="block1">
     <div class="block-head">
       <div class="step-num active" id="s1">1</div>
-      <div class="block-title">動画読み込み</div>
+      <div class="block-title">動画読み込み（ブラウザ内で完結）</div>
     </div>
     <div class="block-body">
       <input type="file" id="videoInput" accept="video/*">
@@ -364,7 +366,7 @@ header {
           <path d="M2 8h20M2 16h20M7 4v4M7 16v4M12 4v16M17 4v4M17 16v4"/>
         </svg>
         <div class="upload-text" id="uploadText">
-          <b>タップして動画を選択</b>MP4 / MOV 対応　—　ブラウザ内完結
+          <b>タップして動画を選択</b>MP4 / MOV 対応（H.264形式）
         </div>
       </div>
     </div>
@@ -409,13 +411,13 @@ header {
     <div class="result-grid">
       <!-- 30fps -->
       <div class="result-cell" id="cell30">
-        <div class="res-unit-label">30fps 換算</div>
+        <div class="res-unit-label">30 FPS 換算</div>
         <div class="res-num large" id="r30">—</div>
         <div class="res-sub">フレーム</div>
       </div>
       <!-- 60fps -->
       <div class="result-cell" id="cell60">
-        <div class="res-unit-label">60fps 換算</div>
+        <div class="res-unit-label">60 FPS 換算</div>
         <div class="res-num medium" id="r60">—</div>
         <div class="res-sub">フレーム</div>
       </div>
@@ -668,16 +670,16 @@ function redraw(){
   if(!c.width||!videoEl)return;
   const ctx=c.getContext('2d');
   ctx.drawImage(videoEl,0,0,c.width,c.height);
-  if(rectIn)   dr(ctx,rectIn,  '#00ffff','INPUT');
-  if(rectOut)  dr(ctx,rectOut, '#ff4f83','OUTPUT');
-  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#00ffff':'#ff4f83','',true);
+  if(rectIn)   dr(ctx,rectIn,  '#00ffff','INPUT',  false, '#ffffff');
+  if(rectOut)  dr(ctx,rectOut, '#ff4f83','OUTPUT', false, '#ffffff');
+  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#00ffff':'#ff4f83','',true,'#ffffff');
 }
-function dr(ctx,r,color,label,dashed=false){
+function dr(ctx,r,color,label,dashed=false,labelColor='#ffffff'){
   ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2;
   if(dashed) ctx.setLineDash([4,4]);
   ctx.strokeRect(r.x,r.y,r.w,r.h);
   ctx.fillStyle=color+'1a'; ctx.fillRect(r.x,r.y,r.w,r.h);
-  if(label){ ctx.fillStyle=color; ctx.font='bold 11px DM Mono,monospace'; ctx.fillText(label,r.x+4,r.y+14); }
+  if(label){ ctx.fillStyle=labelColor; ctx.font='bold 11px DM Mono,monospace'; ctx.fillText(label,r.x+4,r.y+14); }
   ctx.restore();
 }
 
