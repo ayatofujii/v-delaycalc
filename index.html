@@ -16,9 +16,9 @@
   --accent:  #e8ff47;
   --accent2: #ff4747;
   --ok:      #47ffb2;
-  --text:    #e8edf4;
-  --dim:     #999999;
-  --mid:     #bbbbbb;
+  --text:    #f0f4fa;
+  --dim:     #aaaaaa;
+  --mid:     #cccccc;
   --mono:    'DM Mono', monospace;
   --sans:    'Noto Sans JP', sans-serif;
 }
@@ -102,7 +102,7 @@ header {
 #videoInput { display: none; }
 .upload-zone {
   display: flex; align-items: center; gap: 14px;
-  padding: 16px;
+  padding: 10px 14px;
   border: 1px solid var(--border2); border-radius: 5px;
   background: var(--bg); cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
@@ -153,15 +153,16 @@ header {
 .rect-group { display: flex; gap: 6px; align-items: center; flex: 1; flex-wrap: wrap; }
 .rbtn {
   font-family: var(--mono); font-size: 13px;
-  padding: 5px 10px; border-radius: 3px; cursor: pointer;
+  padding: 5px 0; border-radius: 3px; cursor: pointer;
   border: 1px solid transparent;
   user-select: none; white-space: nowrap;
-  display: flex; align-items: center; gap: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
   transition: all 0.12s;
+  width: 100px;
 }
 .rbtn .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .rbtn.inp { background: #001a1a; color: #00ffff; border-color: #00ffff; }
-.rbtn.out { background: #1a001a; color: #ff00ff; border-color: #ff00ff; }
+.rbtn.out { background: #1a0010; color: #ff4f83; border-color: #ff4f83; }
 .rbtn.active   { box-shadow: 0 0 6px currentColor; }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
@@ -208,12 +209,12 @@ header {
   background: var(--border);
 }
 .result-cell {
-  background: var(--card);
-  padding: 16px 14px;
+  background: #000000;
+  padding: 10px 8px;
   text-align: center;
   transition: background 0.2s;
 }
-.result-cell.highlight { background: #0d1100; }
+.result-cell.highlight { background: #0a0f00; }
 .res-unit-label {
   font-family: var(--mono); font-size: 14px; color: var(--mid);
   letter-spacing: 0.1em; text-transform: uppercase;
@@ -347,11 +348,11 @@ header {
 
 <div class="page">
 
-  <!-- ① 動画アップロード -->
+  <!-- ① 動画読み込み -->
   <div class="block is-active" id="block1">
     <div class="block-head">
       <div class="step-num active" id="s1">1</div>
-      <div class="block-title">動画アップロード</div>
+      <div class="block-title">動画読み込み</div>
     </div>
     <div class="block-body">
       <input type="file" id="videoInput" accept="video/*">
@@ -363,7 +364,7 @@ header {
           <path d="M2 8h20M2 16h20M7 4v4M7 16v4M12 4v16M17 4v4M17 16v4"/>
         </svg>
         <div class="upload-text" id="uploadText">
-          <b>タップしてファイルを選択</b>MP4 / MOV 対応　—　ブラウザ内完結
+          <b>タップして動画を選択</b>MP4 / MOV 対応　—　ブラウザ内完結
         </div>
       </div>
     </div>
@@ -373,19 +374,19 @@ header {
   <div class="block" id="block2">
     <div class="block-head">
       <div class="step-num" id="s2">2</div>
-      <div class="block-title">エリア選択</div>
+      <div class="block-title">分析エリアを矩形ドラッグで指定</div>
     </div>
 
     <div class="canvas-outer" id="canvasOuter">
       <canvas id="frameCanvas"></canvas>
       <div class="cv-ph" id="cvPH">
-        <div class="cv-ph-text">動画をアップロードすると<br>中間フレームが表示されます<br><br>INPUT → OUTPUT の順に<br>矩形をドラッグで選択</div>
+        <div class="cv-ph-text">動画読み込みが完了すると<br>中間フレームが表示されます</div>
       </div>
     </div>
 
     <div class="ctrl-row">
       <div class="rect-group">
-        <div class="rbtn inp active"   id="btnIn"  onclick="setMode('input')"><span class="dot"></span>INPUT</div>
+        <div class="rbtn inp inactive" id="btnIn"  onclick="setMode('input')"><span class="dot"></span>INPUT</div>
         <div class="rbtn out inactive" id="btnOut" onclick="setMode('output')"><span class="dot"></span>OUTPUT</div>
       </div>
       <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>ANALYZE</button>
@@ -402,7 +403,7 @@ header {
   <div class="block" id="block3">
     <div class="block-head">
       <div class="step-num" id="s3">3</div>
-      <div class="block-title">解析結果</div>
+      <div class="block-title">解析結果（ディレイ量）</div>
     </div>
 
     <div class="result-grid">
@@ -438,7 +439,7 @@ header {
         <canvas class="g-canvas" id="graphCanvasIn" height="52"></canvas>
       </div>
       <div class="g-row">
-        <div class="g-row-label" style="color:#ff00ff">● OUTPUT</div>
+        <div class="g-row-label" style="color:#ff4f83">● OUTPUT</div>
         <canvas class="g-canvas" id="graphCanvasOut" height="52"></canvas>
       </div>
     </div>
@@ -630,6 +631,7 @@ function renderFrame() {
   canvas.getContext('2d').drawImage(videoEl,0,0,canvas.width,canvas.height);
   document.getElementById('cvPH').style.display='none';
   setupCanvas(canvas);
+  document.getElementById('btnIn').className='rbtn inp active';
   setStep(1,'done');
   setStep(2,'active');
   document.getElementById('analyzeBtn').disabled=false;
@@ -667,8 +669,8 @@ function redraw(){
   const ctx=c.getContext('2d');
   ctx.drawImage(videoEl,0,0,c.width,c.height);
   if(rectIn)   dr(ctx,rectIn,  '#00ffff','INPUT');
-  if(rectOut)  dr(ctx,rectOut, '#ff00ff','OUTPUT');
-  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#00ffff':'#ff00ff','',true);
+  if(rectOut)  dr(ctx,rectOut, '#ff4f83','OUTPUT');
+  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#00ffff':'#ff4f83','',true);
 }
 function dr(ctx,r,color,label,dashed=false){
   ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2;
@@ -780,7 +782,7 @@ async function analyze(){
   log(`OUTPUT粗スキャン: ${cOut.length}サンプル`,'ok');
 
   if(cIn.length<5||cOut.length<5){
-    showAlert('⚠ フレーム取得失敗','動画を再度アップロードしてお試しください。');
+    showAlert('⚠ フレーム取得失敗','動画を再度読み込んでお試しください。');
     document.getElementById('analyzeBtn').disabled=false; return;
   }
 
@@ -930,7 +932,7 @@ function drawGraph(dI, dO, pI, pO) {
   }
 
   drawSingle('graphCanvasIn',  dI, pI, '#00ffff');
-  drawSingle('graphCanvasOut', dO, pO, '#ff00ff');
+  drawSingle('graphCanvasOut', dO, pO, '#ff4f83');
 }
 </script>
 </body>
