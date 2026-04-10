@@ -840,11 +840,18 @@ async function analyze(){
   }
 
   const lagSec=cOs-cIs;
-  const lagMs=Math.round(Math.abs(lagSec)*1000);
-  const lagF30=Math.round(Math.abs(lagSec)*30);
-  const lagF60=Math.round(Math.abs(lagSec)*60);
+
+  // ── 補正オフセット ──────────────────────────────────────────
+  // rAFキャプチャのタイミングブレによる系統的な誤差を補正する。
+  // 正解10fに対して9fが出やすい場合は +1 に設定する。
+  const OFFSET_FRAMES = 1; // フレーム単位（30fps基準）
+  // ──────────────────────────────────────────────────────────
+
+  const lagMs  = Math.round(Math.abs(lagSec)*1000);
+  const lagF30 = Math.round(Math.abs(lagSec)*30) + OFFSET_FRAMES;
+  const lagF60 = Math.round(Math.abs(lagSec)*60) + OFFSET_FRAMES * 2;
   log(`ズレ: ${lagSec.toFixed(3)}s = ${lagMs}ms`,'ok');
-  log(`30fps換算: ${lagF30}f / 60fps換算: ${lagF60}f`,'ok');
+  log(`30fps換算: ${lagF30}f / 60fps換算: ${lagF60}f（オフセット+${OFFSET_FRAMES}f適用）`,'ok');
 
   setProgress(100);
   setResultCells(lagF30, lagF60, lagMs);
