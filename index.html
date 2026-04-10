@@ -250,11 +250,16 @@ header {
   background: var(--bg);
 }
 .g-label {
-  font-family: var(--mono); font-size: 14px; color: var(--mid);
-  letter-spacing: 0.08em; margin-bottom: 6px;
-  display: flex; align-items: center; gap: 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--mid);
+  letter-spacing: 0.08em; margin-bottom: 4px;
 }
-#graphCanvas { display: block; width: 100%; border-radius: 3px; background: #060709; }
+.g-row { margin-bottom: 8px; }
+.g-row:last-child { margin-bottom: 0; }
+.g-row-label {
+  font-family: var(--mono); font-size: 10px;
+  margin-bottom: 3px; letter-spacing: 0.06em;
+}
+.g-canvas { display: block; width: 100%; border-radius: 3px; background: #0a0a0a; }
 
 /* ── ALERT BLOCK ── */
 .alert-block {
@@ -427,12 +432,15 @@ header {
     </div>
 
     <div class="graph-wrap" id="graphWrap">
-      <div class="g-label">
-        CHANGE-SCORE TIMELINE
-        <span style="color:#00ffff">── INPUT</span>
-        <span style="color:#ff00ff">── OUTPUT</span>
+      <div class="g-label">CHANGE-SCORE TIMELINE</div>
+      <div class="g-row">
+        <div class="g-row-label" style="color:#00ffff">● INPUT</div>
+        <canvas class="g-canvas" id="graphCanvasIn" height="52"></canvas>
       </div>
-      <canvas id="graphCanvas" height="60"></canvas>
+      <div class="g-row">
+        <div class="g-row-label" style="color:#ff00ff">● OUTPUT</div>
+        <canvas class="g-canvas" id="graphCanvasOut" height="52"></canvas>
+      </div>
     </div>
   </div>
 
@@ -821,31 +829,80 @@ async function analyze(){
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
   document.getElementById('graphWrap').style.display='block';
-  setTimeout(()=>drawGraph(cI.diffs,cO.diffs,cI.idx-1,cO.idx-1), 50);
+  setTimeout(()=>drawGraph(cI.diffs, cO.diffs, cI.idx-1, cO.idx-1), 50);
   setStep(2,'done');
   setStep(3,'done');
   document.getElementById('analyzeBtn').disabled=false;
 }
 
 // ── GRAPH ──
-function drawGraph(dI,dO,pI,pO){
-  const c=document.getElementById('graphCanvas');
-  c.width=c.parentElement.clientWidth;
-  const W=c.width,H=c.height,ctx=c.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-  const maxV=Math.max(...dI,...dO)||1, n=Math.max(dI.length,dO.length);
-  const dl=(d,col,pk)=>{
+function drawGraph(dI, dO, pI, pO) {
+  // INPUT・OUTPUTをそれぞれ独立スケールで2段描画
+  // タイムラインは共通（粗スキャン60サンプル分の幅）
+  // INPUTスパイクは左寄り、OUTPUTスパイクは右寄りになる
+
+  function drawSingle(canvasId, diffs, peak, color) {
+    const c = document.getElementById(canvasId);
+    if (!c) return;
+    c.width = c.parentElement.clientWidth;
+    const W = c.width, H = c.height;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    // 背景グリッド線（薄く）
+    ctx.strokeStyle = '#222222';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    d.forEach((v,i)=>{ const x=(i/(n-1))*W,y=H-(v/maxV)*(H-4); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
-    ctx.strokeStyle=col+'88'; ctx.lineWidth=1.5; ctx.stroke();
-    if(pk>=0&&pk<d.length){
-      const px=(pk/(n-1))*W,py=H-(d[pk]/maxV)*(H-4);
-      ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fillStyle=col; ctx.fill();
-      ctx.strokeStyle=col; ctx.lineWidth=1; ctx.setLineDash([2,3]);
-      ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke(); ctx.setLineDash([]);
+    ctx.moveTo(0, H/2); ctx.lineTo(W, H/2);
+    ctx.stroke();
+
+    const maxV = Math.max(...diffs) || 1;
+    const n = diffs.length;
+
+    // 折れ線
+    ctx.beginPath();
+    diffs.forEach((v, i) => {
+      const x = (i / (n - 1)) * W;
+      const y = H - (v / maxV) * (H - 6);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color + 'aa';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 塗りつぶし（グラデーション）
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, color + '33');
+    grad.addColorStop(1, color + '00');
+    ctx.beginPath();
+    diffs.forEach((v, i) => {
+      const x = (i / (n - 1)) * W;
+      const y = H - (v / maxV) * (H - 6);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // スパイクマーカー
+    if (peak >= 0 && peak < diffs.length) {
+      const px = (peak / (n - 1)) * W;
+      const py = H - (diffs[peak] / maxV) * (H - 6);
+      // 垂直破線
+      ctx.strokeStyle = color + '66';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+      ctx.setLineDash([]);
+      // ドット
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
     }
-  };
-  dl(dI,'#00ffff',pI); dl(dO,'#ff00ff',pO);
+  }
+
+  drawSingle('graphCanvasIn',  dI, pI, '#00ffff');
+  drawSingle('graphCanvasOut', dO, pO, '#ff00ff');
 }
 </script>
 </body>
