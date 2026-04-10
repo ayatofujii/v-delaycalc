@@ -861,9 +861,10 @@ async function analyze(){
   setProgress(1,'スキャン準備中...');
 
   const dur=videoEl.duration;
-  const WIN=3.0, CN=60, FW=1.2, FN=54;  // FW: ±0.6s（合計1.2s窓）
-  const s0=Math.min(Math.max(0,dur/2-WIN/2),Math.max(0,dur-WIN));
-  const e0=Math.min(s0+WIN,dur);
+  const WIN = Math.min(3.0, dur * 0.9);
+  const CN=60, FW=0.6, FN=54;  // FW: ±0.3s（合計0.6s窓）→ 解像度≒11ms
+  const s0 = Math.min(Math.max(0, dur/2 - WIN/2), Math.max(0, dur - WIN));
+  const e0 = Math.min(s0 + WIN, dur);
   log(`窓: ${s0.toFixed(1)}s〜${e0.toFixed(1)}s`,'info');
 
   setProgress(5,'INPUT スキャン中...');
@@ -886,15 +887,21 @@ async function analyze(){
   log(`粗カット IN: ${rIs.toFixed(2)}s (SNR=${rIn.snr.toFixed(1)}) / OUT: ${rOs.toFixed(2)}s (SNR=${rOut.snr.toFixed(1)})`,'info');
 
   setProgress(50,'INPUT 精密スキャン中...');
-  const fIs=Math.max(0, rIs-FW/2), fIe=Math.min(dur-0.2, rIs+FW/2);
-  const {scores:fIn, times:tfIn} =await captureScores(rectIn, fIs,fIe,FN);
-  const fsI=(fIe-fIs)/FN;
+  let fIs = rIs - FW/2, fIe = rIs + FW/2;
+  // 終端オーバーフロー時は窓を前にシフト
+  if (fIe > dur - 0.1) { fIe = dur - 0.1; fIs = Math.max(0, fIe - FW); }
+  fIs = Math.max(0, fIs);
+  const {scores:fIn, times:tfIn} = await captureScores(rectIn, fIs, fIe, FN);
+  const fsI = (fIe - fIs) / FN;
   log(`INPUT精密: ${fIn.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度`,'ok');
 
   setProgress(72,'OUTPUT 精密スキャン中...');
-  const fOs=Math.max(0, rOs-FW/2), fOe=Math.min(dur-0.2, rOs+FW/2);
-  const {scores:fOut,times:tfOut}=await captureScores(rectOut,fOs,fOe,FN);
-  const fsO=(fOe-fOs)/FN;
+  let fOs = rOs - FW/2, fOe = rOs + FW/2;
+  // 終端オーバーフロー時は窓を前にシフト
+  if (fOe > dur - 0.1) { fOe = dur - 0.1; fOs = Math.max(0, fOe - FW); }
+  fOs = Math.max(0, fOs);
+  const {scores:fOut, times:tfOut} = await captureScores(rectOut, fOs, fOe, FN);
+  const fsO = (fOe - fOs) / FN;
   log(`OUTPUT精密: ${fOut.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度`,'ok');
 
   setProgress(90,'カット位置を特定中...');
