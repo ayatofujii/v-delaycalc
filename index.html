@@ -540,7 +540,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.1</div>
+        <div class="sys-val">v-delayCalc 0.1.2</div>
       </div>
     </div>
   </div>
@@ -784,23 +784,50 @@ function scoreDiff(a, b) {
   return histDiff * 0.55 + edgeDiff * 0.35 + lumDiff * 0.10;
 }
 
-function captureScores(rect,s0,e0,N){
-  return new Promise(resolve=>{
-    const vr=toVC(rect);
-    const off=document.createElement('canvas'); off.width=videoEl.videoWidth; off.height=videoEl.videoHeight;
-    const ctx=off.getContext('2d');
-    const scores=[],times=[];
-    const step=(e0-s0)/N; let nc=s0,rafId=null,started=false;
-    const finish=()=>{ if(rafId)cancelAnimationFrame(rafId); videoEl.pause(); resolve({scores,times}); };
-    const tick=()=>{
-      const t=videoEl.currentTime;
-      while(scores.length<N&&t>=nc-0.005){ ctx.drawImage(videoEl,0,0); scores.push(getFrameScore(ctx,vr)); times.push(t); nc+=step; }
-      if(scores.length>=N||t>=e0+0.15){ finish(); return; }
-      rafId=requestAnimationFrame(tick);
+function captureScores(rect, s0, e0, N) {
+  return new Promise(resolve => {
+    const vr  = toVC(rect);
+    const off = document.createElement('canvas');
+    off.width = videoEl.videoWidth; off.height = videoEl.videoHeight;
+    const ctx = off.getContext('2d');
+    const scores=[], times=[];
+    const step = (e0 - s0) / N;
+    let nc = s0, rafId = null, started = false;
+
+    const finish = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      videoEl.pause();
+      resolve({ scores, times });
     };
-    const go=()=>{ if(started)return; started=true; videoEl.playbackRate=1; videoEl.play().catch(()=>{}); rafId=requestAnimationFrame(tick); setTimeout(finish,Math.max(6000,(e0-s0)*2000+3000)); };
-    videoEl.muted=true; videoEl.currentTime=s0;
-    videoEl.addEventListener('seeked',go,{once:true}); setTimeout(go,600);
+
+    const tick = () => {
+      const t = videoEl.currentTime;
+      // seekが完了していない場合（前の位置にいる）はスキップ
+      if (t < s0 - 0.1) { rafId = requestAnimationFrame(tick); return; }
+      while (scores.length < N && t >= nc - 0.005) {
+        ctx.drawImage(videoEl, 0, 0);
+        scores.push(getFrameScore(ctx, vr));
+        times.push(t);
+        nc += step;
+      }
+      if (scores.length >= N || t >= e0 + 0.15) { finish(); return; }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    const startPlay = () => {
+      if (started) return; started = true;
+      videoEl.playbackRate = 1;
+      videoEl.play().catch(() => {});
+      rafId = requestAnimationFrame(tick);
+      setTimeout(finish, Math.max(6000, (e0 - s0) * 2000 + 3000));
+    };
+
+    videoEl.pause();
+    videoEl.muted = true;
+    videoEl.currentTime = s0;
+    // seekedイベントと保険タイムアウトの両方で開始
+    videoEl.addEventListener('seeked', startPlay, { once: true });
+    setTimeout(startPlay, 800);
   });
 }
 
