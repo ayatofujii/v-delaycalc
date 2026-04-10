@@ -154,15 +154,15 @@ header {
 .rbtn {
   font-family: var(--mono); font-size: 13px;
   padding: 5px 10px; border-radius: 3px; cursor: pointer;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   user-select: none; white-space: nowrap;
   display: flex; align-items: center; gap: 5px;
   transition: all 0.12s;
 }
 .rbtn .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.rbtn.inp { background: #001a1a; color: #00ffff; border-color: #005555; }
-.rbtn.out { background: #1a001a; color: #ff00ff; border-color: #550055; }
-.rbtn.active   { border-color: currentColor; box-shadow: 0 0 6px currentColor44; }
+.rbtn.inp { background: #001a1a; color: #00ffff; border-color: #00ffff; }
+.rbtn.out { background: #1a001a; color: #ff00ff; border-color: #ff00ff; }
+.rbtn.active   { box-shadow: 0 0 6px currentColor; }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
   font-family: var(--mono); font-size: 13px;
@@ -191,7 +191,7 @@ header {
 .prog-fill { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
 .prog-pct {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  font-family: var(--mono); font-size: 11px; color: #aaaaaa;
+  font-family: var(--mono); font-size: 11px; color: #ffffff;
   line-height: 1; pointer-events: none;
 }
 .prog-label {
@@ -203,7 +203,7 @@ header {
 /* ── BLOCK 3: RESULT ── */
 .result-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 1px;
   background: var(--border);
 }
@@ -224,8 +224,8 @@ header {
   line-height: 1; margin-bottom: 4px;
   transition: color 0.2s;
 }
-.res-num.large { font-size: 48px; }
-.res-num.medium { font-size: 32px; }
+.res-num.large  { font-size: 36px; }
+.res-num.medium { font-size: 36px; }
 .res-num.filled { color: var(--accent); }
 .res-sub {
   font-family: var(--mono); font-size: 13px; color: var(--mid);
@@ -364,7 +364,6 @@ header {
       <div class="rect-group">
         <div class="rbtn inp active"   id="btnIn"  onclick="setMode('input')"><span class="dot"></span>INPUT</div>
         <div class="rbtn out inactive" id="btnOut" onclick="setMode('output')"><span class="dot"></span>OUTPUT</div>
-        <button class="rreset" onclick="resetRects()">リセット</button>
       </div>
       <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>ANALYZE</button>
     </div>
@@ -412,8 +411,8 @@ header {
     <div class="graph-wrap" id="graphWrap">
       <div class="g-label">
         CHANGE-SCORE TIMELINE
-        <span style="color:#5aaeff">── INPUT</span>
-        <span style="color:#ff8c42">── OUTPUT</span>
+        <span style="color:#00ffff">── INPUT</span>
+        <span style="color:#ff00ff">── OUTPUT</span>
       </div>
       <canvas id="graphCanvas" height="60"></canvas>
     </div>
@@ -599,16 +598,16 @@ function redraw(){
   if(!c.width||!videoEl)return;
   const ctx=c.getContext('2d');
   ctx.drawImage(videoEl,0,0,c.width,c.height);
-  if(rectIn)   dr(ctx,rectIn, '#5aaeff','INPUT');
-  if(rectOut)  dr(ctx,rectOut,'#ff8c42','OUTPUT');
-  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#5aaeff':'#ff8c42','',true);
+  if(rectIn)   dr(ctx,rectIn,  '#00ffff','INPUT');
+  if(rectOut)  dr(ctx,rectOut, '#ff00ff','OUTPUT');
+  if(tempRect) dr(ctx,tempRect,drawMode==='input'?'#00ffff':'#ff00ff','',true);
 }
 function dr(ctx,r,color,label,dashed=false){
   ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=2;
   if(dashed) ctx.setLineDash([4,4]);
   ctx.strokeRect(r.x,r.y,r.w,r.h);
   ctx.fillStyle=color+'1a'; ctx.fillRect(r.x,r.y,r.w,r.h);
-  if(label){ ctx.fillStyle=color; ctx.font='bold 10px DM Mono,monospace'; ctx.fillText(label,r.x+4,r.y+13); }
+  if(label){ ctx.fillStyle=color; ctx.font='bold 11px DM Mono,monospace'; ctx.fillText(label,r.x+4,r.y+14); }
   ctx.restore();
 }
 
@@ -761,8 +760,8 @@ async function analyze(){
   setProgress(100);
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
-  drawGraph(cI.diffs,cO.diffs,cI.idx-1,cO.idx-1);
   document.getElementById('graphWrap').style.display='block';
+  setTimeout(()=>drawGraph(cI.diffs,cO.diffs,cI.idx-1,cO.idx-1), 50);
   setStep(2,'done');
   setStep(3,'done');
   document.getElementById('analyzeBtn').disabled=false;
@@ -786,7 +785,7 @@ function drawGraph(dI,dO,pI,pO){
       ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke(); ctx.setLineDash([]);
     }
   };
-  dl(dI,'#5aaeff',pI); dl(dO,'#ff8c42',pO);
+  dl(dI,'#00ffff',pI); dl(dO,'#ff00ff',pO);
 }
 </script>
 </body>
