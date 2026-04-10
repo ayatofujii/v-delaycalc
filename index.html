@@ -44,7 +44,7 @@ header {
   position: sticky; top: 0; z-index: 10;
 }
 .logo { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; }
-.logo-sep { color: #333; font-weight: 300; }
+.logo-sep { color: var(--accent); font-weight: 300; }
 .ver { font-family: var(--mono); font-size: 14px; color: var(--mid); letter-spacing: 0.1em; }
 
 /* ── PAGE ── */
@@ -94,7 +94,7 @@ header {
 .block-title {
   font-family: var(--mono);
   font-size: 14px; font-weight: 500;
-  color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase;
+  color: #cccccc; letter-spacing: 0.1em; text-transform: uppercase;
 }
 .block-body { padding: 12px 14px; }
 
@@ -154,15 +154,15 @@ header {
 .rbtn {
   font-family: var(--mono); font-size: 13px;
   padding: 5px 10px; border-radius: 3px; cursor: pointer;
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   user-select: none; white-space: nowrap;
   display: flex; align-items: center; gap: 5px;
   transition: all 0.12s;
 }
 .rbtn .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.rbtn.inp { background: #001228; color: #5aaeff; border-color: #002a5c; }
-.rbtn.out { background: #1a0800; color: #ff8c42; border-color: #5c2400; }
-.rbtn.active   { box-shadow: 0 0 0 1px currentColor; }
+.rbtn.inp { background: #001a1a; color: #00ffff; border-color: #005555; }
+.rbtn.out { background: #1a001a; color: #ff00ff; border-color: #550055; }
+.rbtn.active   { border-color: currentColor; box-shadow: 0 0 6px currentColor44; }
 .rbtn.inactive { opacity: 0.3; }
 .rreset {
   font-family: var(--mono); font-size: 13px;
@@ -184,8 +184,16 @@ header {
 .analyze-btn:hover    { background: #f0ff60; }
 .analyze-btn:disabled { background: #1a1a1a; color: #444; cursor: not-allowed; }
 
-.prog { height: 2px; background: var(--border); display: none; }
+.prog {
+  height: 18px; background: var(--border); display: none;
+  position: relative; overflow: hidden;
+}
 .prog-fill { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
+.prog-pct {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 11px; color: #aaaaaa;
+  line-height: 1; pointer-events: none;
+}
 .prog-label {
   font-family: var(--mono); font-size: 14px; color: var(--mid);
   padding: 4px 14px; display: none; background: var(--bg);
@@ -361,7 +369,10 @@ header {
       <button class="analyze-btn" id="analyzeBtn" onclick="analyze()" disabled>ANALYZE</button>
     </div>
 
-    <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog" id="prog">
+      <div class="prog-fill" id="progFill"></div>
+      <div class="prog-pct" id="progPct"></div>
+    </div>
     <div class="prog-label" id="progLabel"></div>
   </div>
 
@@ -487,13 +498,15 @@ function log(msg, type='info') {
 
 function setProgress(pct, label='') {
   const p=document.getElementById('prog'), f=document.getElementById('progFill');
+  const pc=document.getElementById('progPct');
   const lb=document.getElementById('progLabel');
   if(pct>0&&pct<100){
     p.style.display='block'; f.style.width=pct+'%';
+    pc.textContent=pct+'%';
     if(label){ lb.style.display='block'; lb.textContent=label; }
   } else if(pct>=100){
-    f.style.width='100%';
-    setTimeout(()=>{ p.style.display='none'; lb.style.display='none'; },500);
+    f.style.width='100%'; pc.textContent='100%';
+    setTimeout(()=>{ p.style.display='none'; lb.style.display='none'; pc.textContent=''; },500);
   }
 }
 
