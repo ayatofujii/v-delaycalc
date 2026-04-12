@@ -516,7 +516,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 2</div>
-        <div class="sys-val">精密スキャン — カット前後±0.8秒を54サンプルで2回スキャン（解像度 ≒ 30ms）。2回の結果を平均してrAFタイミング揺らぎを除去</div>
+        <div class="sys-val">精密スキャン — カット前後±0.8秒を54サンプルで3回スキャン（解像度 ≒ 30ms）。3回の結果の中央値を採用し外れ値を除去</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">スコア指標</div>
@@ -556,7 +556,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.3</div>
+        <div class="sys-val">v-delayCalc 0.2.4</div>
       </div>
     </div>
   </div>
@@ -970,49 +970,48 @@ async function analyze(){
   if (fIe > dur - 0.1) { fIe = dur - 0.1; fIs = Math.max(0, fIe - FW); }
   fIs = Math.max(0, fIs);
   log(`INPUT精密窓: ${fIs.toFixed(2)}s〜${fIe.toFixed(2)}s`,'info');
-  // 2回スキャンして平均を取る（rAFタイミング揺らぎを除去）
+  // 3回スキャンして中央値を使用（外れ値の影響を除去）
   const {scores:fIn1, times:tfIn1} = await captureScores(rectIn, fIs, fIe, FN);
   const {scores:fIn2, times:tfIn2} = await captureScores(rectIn, fIs, fIe, FN);
+  const {scores:fIn3, times:tfIn3} = await captureScores(rectIn, fIs, fIe, FN);
   const fsI = (fIe - fIs) / FN;
-  log(`INPUT精密: ${fIn1.length}/${fIn2.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度 / 実範囲:${tfIn1[0]?.toFixed(2)}s〜${tfIn1[tfIn1.length-1]?.toFixed(2)}s`,'ok');
+  log(`INPUT精密: ${fIn1.length}/${fIn2.length}/${fIn3.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度`,'ok');
 
   setProgress(65,'OUTPUT 精密スキャン中...');
   let fOs = rOs - FW/2, fOe = rOs + FW/2;
   if (fOe > dur - 0.1) { fOe = dur - 0.1; fOs = Math.max(0, fOe - FW); }
   fOs = Math.max(0, fOs);
   log(`OUTPUT精密窓: ${fOs.toFixed(2)}s〜${fOe.toFixed(2)}s`,'info');
-  // 2回スキャンして平均を取る
+  // 3回スキャンして中央値を使用
   const {scores:fOut1, times:tfOut1} = await captureScores(rectOut, fOs, fOe, FN);
   const {scores:fOut2, times:tfOut2} = await captureScores(rectOut, fOs, fOe, FN);
+  const {scores:fOut3, times:tfOut3} = await captureScores(rectOut, fOs, fOe, FN);
   const fsO = (fOe - fOs) / FN;
-  log(`OUTPUT精密: ${fOut1.length}/${fOut2.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度 / 実範囲:${tfOut1[0]?.toFixed(2)}s〜${tfOut1[tfOut1.length-1]?.toFixed(2)}s`,'ok');
+  log(`OUTPUT精密: ${fOut1.length}/${fOut2.length}/${fOut3.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度`,'ok');
 
   setProgress(88,'カット位置を特定中...');
   await new Promise(r=>setTimeout(r,10));
 
-  // 2回の結果からカット位置を算出して平均
-  function detectCutAvg(scores1, times1, scores2, times2, startSec, stepSec) {
+  // 3回の結果から中央値を選択（外れ値を除去）
+  function detectCutMedian(scoresArr, timesArr, startSec, stepSec) {
     const MIN = 20;
-    const getCutTime = (sc, tm, s0, st) => {
+    const times = scoresArr.map((sc, i) => {
       if (sc.length < MIN) return null;
       const cut = detectCut(sc);
-      return tm[cut.idx] ?? (s0 + cut.idx * st);
-    };
-    const t1 = getCutTime(scores1, times1, startSec, stepSec);
-    const t2 = getCutTime(scores2, times2, startSec, stepSec);
-    // 両方取れた場合は平均、片方だけの場合はその値を使用
-    if (t1 !== null && t2 !== null) return (t1 + t2) / 2;
-    if (t1 !== null) return t1;
-    if (t2 !== null) return t2;
-    return null;
+      return timesArr[i][cut.idx] ?? (startSec + cut.idx * stepSec);
+    }).filter(t => t !== null);
+    if (times.length === 0) return null;
+    times.sort((a, b) => a - b);
+    return times[Math.floor(times.length / 2)]; // 中央値
   }
 
   const MIN_FINE = 20;
   let cIs, cOs, cI, cO;
 
-  if (fIn1.length >= MIN_FINE || fIn2.length >= MIN_FINE) {
-    cI  = detectCut(fIn1.length >= fIn2.length ? fIn1 : fIn2);
-    cIs = detectCutAvg(fIn1, tfIn1, fIn2, tfIn2, fIs, fsI) ?? rIs;
+  const fInMedian = detectCutMedian([fIn1,fIn2,fIn3],[tfIn1,tfIn2,tfIn3], fIs, fsI);
+  if (fInMedian !== null) {
+    cI  = detectCut(fIn1.length >= fIn2.length ? (fIn1.length >= fIn3.length ? fIn1 : fIn3) : (fIn2.length >= fIn3.length ? fIn2 : fIn3));
+    cIs = fInMedian;
     log(`精密カット IN:  t=${cIs.toFixed(3)}s  SNR=${cI.snr.toFixed(1)}`,'ok');
   } else {
     log(`INPUT精密サンプル不足 → 粗スキャン結果を使用`,'warn');
@@ -1020,9 +1019,10 @@ async function analyze(){
     log(`精密カット IN:  t=${cIs.toFixed(3)}s  SNR=${cI.snr.toFixed(1)}`,'ok');
   }
 
-  if (fOut1.length >= MIN_FINE || fOut2.length >= MIN_FINE) {
-    cO  = detectCut(fOut1.length >= fOut2.length ? fOut1 : fOut2);
-    cOs = detectCutAvg(fOut1, tfOut1, fOut2, tfOut2, fOs, fsO) ?? rOs;
+  const fOutMedian = detectCutMedian([fOut1,fOut2,fOut3],[tfOut1,tfOut2,tfOut3], fOs, fsO);
+  if (fOutMedian !== null) {
+    cO  = detectCut(fOut1.length >= fOut2.length ? (fOut1.length >= fOut3.length ? fOut1 : fOut3) : (fOut2.length >= fOut3.length ? fOut2 : fOut3));
+    cOs = fOutMedian;
     log(`精密カット OUT: t=${cOs.toFixed(3)}s SNR=${cO.snr.toFixed(1)}`,'ok');
   } else {
     log(`OUTPUT精密サンプル不足 → 粗スキャン結果を使用`,'warn');
@@ -1056,10 +1056,11 @@ async function analyze(){
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
 
-  // グラフ用：精密スキャンのdiffsを使用（カット周辺のみ・スパイクが鮮明）
-  // X軸は各自の時刻ベースで描画
-  const cutInFine  = detectCut(fIn1.length >= fIn2.length ? fIn1 : fIn2);
-  const cutOutFine = detectCut(fOut1.length >= fOut2.length ? fOut1 : fOut2);
+  // グラフ用：精密スキャン3回のうち最もサンプルが多いものを使用
+  const bestIn  = [fIn1,fIn2,fIn3].reduce((a,b)=>a.length>=b.length?a:b);
+  const bestOut = [fOut1,fOut2,fOut3].reduce((a,b)=>a.length>=b.length?a:b);
+  const cutInFine  = detectCut(bestIn);
+  const cutOutFine = detectCut(bestOut);
 
   document.getElementById('graphWrap').style.display='block';
   setTimeout(()=>drawGraph(
