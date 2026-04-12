@@ -924,6 +924,19 @@ function showAlert(title, body) {
 }
 function hideAlert() { document.getElementById('alertBlock').style.display='none'; }
 
+// ── CUT MEDIAN ──
+function detectCutMedian(scoresArr, timesArr, startSec, stepSec) {
+  const MIN = 20;
+  const times = scoresArr.map((sc, i) => {
+    if (sc.length < MIN) return null;
+    const cut = detectCut(sc);
+    return timesArr[i][cut.idx] ?? (startSec + cut.idx * stepSec);
+  }).filter(t => t !== null);
+  if (times.length === 0) return null;
+  times.sort((a, b) => a - b);
+  return times[Math.floor(times.length / 2)];
+}
+
 // ── ANALYZE ──
 async function analyze(){
   if(!videoEl)return;
@@ -943,19 +956,16 @@ async function analyze(){
   setProgress(1,'スキャン準備中...');
 
   const dur = videoEl.duration;
-  // 粗スキャン：1秒間隔を基本とし、最低30サンプルを保証
-  const MIN_CN = 30;
-  const CN = Math.max(MIN_CN, Math.floor(dur / 1.0));
-  const s0 = 0;
-  const e0 = dur;
+  // 粗スキャン：動画全体を最低30サンプル保証でスキャン
+  const CN = Math.max(30, Math.floor(dur));
   const coarseInterval = dur / CN;
-  // 精密スキャン：±0.8s窓。サンプル間隔を30fps基準（≒33ms=1f）に固定
+  // 精密スキャン：サンプル間隔を30fps基準（33.3ms=1f）に固定
   const FW = 1.6;
-  const FRAME_INTERVAL = 1 / 30; // 33.3ms = 1フレーム（30fps基準）
+  const FRAME_INTERVAL = 1 / 30;
   log(`動画長: ${dur.toFixed(1)}s / 粗スキャン: ${CN}サンプル（≒${(coarseInterval*1000).toFixed(0)}ms間隔・全体）`,'info');
 
   setProgress(5,'粗スキャン中（IN/OUT同時）...');
-  const {scoresA:cIn, timesA:tcIn, scoresB:cOut, timesB:tcOut} = await captureScoresBoth(rectIn, rectOut, s0, e0, CN);
+  const {scoresA:cIn, timesA:tcIn, scoresB:cOut, timesB:tcOut} = await captureScoresBoth(rectIn, rectOut, 0, dur, CN);
   log(`粗スキャン IN: ${cIn.length}サンプル / OUT: ${cOut.length}サンプル`,'ok');
 
   if(cIn.length<5||cOut.length<5){
@@ -964,9 +974,9 @@ async function analyze(){
   }
 
   const rIn=detectCut(cIn), rOut=detectCut(cOut);
-  const cs=(e0-s0)/CN;
-  const rIs=tcIn[rIn.idx]??(s0+rIn.idx*cs);
-  const rOs=tcOut[rOut.idx]??(s0+rOut.idx*cs);
+  const cs=dur/CN;
+  const rIs=tcIn[rIn.idx]??(rIn.idx*cs);
+  const rOs=tcOut[rOut.idx]??(rOut.idx*cs);
   log(`粗カット IN: ${rIs.toFixed(2)}s (SNR=${rIn.snr.toFixed(1)}) / OUT: ${rOs.toFixed(2)}s (SNR=${rOut.snr.toFixed(1)})`,'info');
 
   // 精密スキャン窓：IN/OUTの粗カット位置を両方カバーする共通窓を算出
@@ -974,7 +984,6 @@ async function analyze(){
   const fWinE = Math.min(dur - 0.1, Math.max(rIs, rOs) + FW/2);
   // サンプル数を窓幅÷1フレーム間隔で決定（30fps基準・端数切り上げ）
   const FN = Math.ceil((fWinE - fWinS) / FRAME_INTERVAL);
-  const fsStep = FRAME_INTERVAL; // 常に33.3ms固定
   log(`精密窓（共通）: ${fWinS.toFixed(2)}s〜${fWinE.toFixed(2)}s / ${FN}サンプル（30fps基準・≒33ms/sample）`,'info');
 
   // 精密スキャン3回（IN/OUTを同時取得・中央値で外れ値除去）
@@ -984,30 +993,14 @@ async function analyze(){
   const {scoresA:fIn2, timesA:tfIn2, scoresB:fOut2, timesB:tfOut2} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
   setProgress(80,'精密スキャン中（IN/OUT同時・3回目）...');
   const {scoresA:fIn3, timesA:tfIn3, scoresB:fOut3, timesB:tfOut3} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
-  log(`精密スキャン: IN ${fIn1.length}/${fIn2.length}/${fIn3.length} / OUT ${fOut1.length}/${fOut2.length}/${fOut3.length} / ${(fsStep*1000).toFixed(1)}ms/sample（1f@30fps）`,'ok');
-  // グラフ描画用に窓情報を保持
-  const fIs = fWinS, fIe = fWinE, fOs = fWinS, fOe = fWinE, fsI = fsStep, fsO = fsStep;
+  log(`精密スキャン: IN ${fIn1.length}/${fIn2.length}/${fIn3.length} / OUT ${fOut1.length}/${fOut2.length}/${fOut3.length} / ${(FRAME_INTERVAL*1000).toFixed(1)}ms/sample（1f@30fps）`,'ok');
 
   setProgress(88,'カット位置を特定中...');
   await new Promise(r=>setTimeout(r,10));
 
-  // 3回の結果から中央値を選択（外れ値を除去）
-  function detectCutMedian(scoresArr, timesArr, startSec, stepSec) {
-    const MIN = 20;
-    const times = scoresArr.map((sc, i) => {
-      if (sc.length < MIN) return null;
-      const cut = detectCut(sc);
-      return timesArr[i][cut.idx] ?? (startSec + cut.idx * stepSec);
-    }).filter(t => t !== null);
-    if (times.length === 0) return null;
-    times.sort((a, b) => a - b);
-    return times[Math.floor(times.length / 2)]; // 中央値
-  }
-
-  const MIN_FINE = 20;
   let cIs, cOs, cI, cO;
 
-  const fInMedian = detectCutMedian([fIn1,fIn2,fIn3],[tfIn1,tfIn2,tfIn3], fIs, fsI);
+  const fInMedian = detectCutMedian([fIn1,fIn2,fIn3],[tfIn1,tfIn2,tfIn3], fWinS, FRAME_INTERVAL);
   if (fInMedian !== null) {
     cI  = detectCut([fIn1,fIn2,fIn3].reduce((a,b)=>a.length>=b.length?a:b));
     cIs = fInMedian;
@@ -1018,7 +1011,7 @@ async function analyze(){
     log(`精密カット IN:  t=${cIs.toFixed(3)}s  SNR=${cI.snr.toFixed(1)}`,'ok');
   }
 
-  const fOutMedian = detectCutMedian([fOut1,fOut2,fOut3],[tfOut1,tfOut2,tfOut3], fOs, fsO);
+  const fOutMedian = detectCutMedian([fOut1,fOut2,fOut3],[tfOut1,tfOut2,tfOut3], fWinS, FRAME_INTERVAL);
   if (fOutMedian !== null) {
     cO  = detectCut([fOut1,fOut2,fOut3].reduce((a,b)=>a.length>=b.length?a:b));
     cOs = fOutMedian;
@@ -1057,8 +1050,8 @@ async function analyze(){
   document.getElementById('graphWrap').style.display='block';
   // cI/cOのdiffsをそのままグラフに使用（余分なdetectCut不要）
   setTimeout(()=>drawGraph(
-    cI.diffs, cI.idx - 1, fIs, fIe,
-    cO.diffs, cO.idx - 1, fOs, fOe,
+    cI.diffs, cI.idx - 1, fWinS, fWinE,
+    cO.diffs, cO.idx - 1, fWinS, fWinE,
     dur
   ), 50);
   setStep(2,'done');
