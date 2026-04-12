@@ -455,7 +455,7 @@ footer {
         <div class="g-row-label"><span style="color:#ff4f83">●</span> <span style="color:#ffffff">OUTPUT</span></div>
         <canvas class="g-canvas" id="graphCanvasOut" height="52"></canvas>
       </div>
-      <div id="graphXAxis" style="display:flex;justify-content:space-between;padding:2px 0 0;"></div>
+      <div id="graphXAxis" style="position:relative;height:14px;margin-top:2px;"></div>
     </div>
   </div>
 
@@ -1149,14 +1149,14 @@ function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe, totalDur) {
   drawSingle('graphCanvasIn',  dI, pI, '#00ffff', tIs, tIe);
   drawSingle('graphCanvasOut', dO, pO, '#ff4f83', tOs, tOe);
 
-  // X軸ラベル（整数秒のみ）
+  // X軸ラベル（整数秒のみ・グリッド線と同じ t/tRange の比率で配置）
   const axis = document.getElementById('graphXAxis');
   axis.innerHTML = '';
   const steps = Math.floor(totalDur);
   for (let t = 0; t <= steps; t++) {
     const span = document.createElement('span');
     span.textContent = t;
-    span.style.cssText = 'font-family:var(--mono);font-size:10px;color:#666666;width:0;text-align:center;';
+    span.style.cssText = `font-family:var(--mono);font-size:10px;color:#666666;position:absolute;left:${(t / tRange * 100).toFixed(3)}%;transform:translateX(-50%);`;
     axis.appendChild(span);
   }
 }
