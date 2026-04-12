@@ -556,7 +556,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.5</div>
+        <div class="sys-val">v-delayCalc 0.2.6</div>
       </div>
     </div>
   </div>
@@ -1087,6 +1087,14 @@ function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe, totalDur) {
     const W = c.width, H = c.height;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, W, H);
+
+    // 1秒ごとのグリッド線
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 1;
+    for (let t = 1; t < totalDur; t++) {
+      const gx = (t / tRange) * W;
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
 
     const n = diffs.length;
     const winRange = winEnd - winStart || 1;
