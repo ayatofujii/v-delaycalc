@@ -552,7 +552,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.1</div>
+        <div class="sys-val">v-delayCalc 0.2.2</div>
       </div>
     </div>
   </div>
@@ -1081,15 +1081,17 @@ function drawGraph(dI, dO, pI, pO) {
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, W, H);
 
-    // ルート変換（スパイク以外の微細変化を見えるようにする）
-    const transformed = diffs.map(v => Math.sqrt(v));
-    const maxV = Math.max(...transformed) || 1;
-    const n = transformed.length;
+    // 最小値底上げ正規化（スパイクを鋭く保ちつつゼロ連続を解消）
+    const minV = Math.min(...diffs);
+    const maxV = Math.max(...diffs) || 1;
+    const range = maxV - minV || 1;
+    const normalized = diffs.map(v => (v - minV) / range);
+    const n = normalized.length;
 
     // 折れ線＋塗りつぶし
     const getXY = i => ({
       x: (i / (n - 1)) * W,
-      y: H - (transformed[i] / maxV) * (H - 8)
+      y: H - normalized[i] * (H - 8)
     });
 
     // 塗りつぶし
@@ -1097,7 +1099,7 @@ function drawGraph(dI, dO, pI, pO) {
     grad.addColorStop(0, color + '44');
     grad.addColorStop(1, color + '00');
     ctx.beginPath();
-    transformed.forEach((_, i) => {
+    normalized.forEach((_, i) => {
       const {x, y} = getXY(i);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
@@ -1107,7 +1109,7 @@ function drawGraph(dI, dO, pI, pO) {
 
     // 折れ線
     ctx.beginPath();
-    transformed.forEach((_, i) => {
+    normalized.forEach((_, i) => {
       const {x, y} = getXY(i);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
@@ -1116,7 +1118,7 @@ function drawGraph(dI, dO, pI, pO) {
     ctx.stroke();
 
     // スパイクマーカー
-    if (peak >= 0 && peak < transformed.length) {
+    if (peak >= 0 && peak < normalized.length) {
       const {x: px, y: py} = getXY(peak);
       // 白1px実線
       ctx.strokeStyle = '#ffffff';
