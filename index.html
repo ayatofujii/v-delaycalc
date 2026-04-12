@@ -191,7 +191,7 @@ header {
   height: 18px; background: var(--border); display: none;
   position: relative; overflow: hidden;
 }
-.prog-fill { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
+.prog-fill { height: 100%; background: var(--accent); width: 0; }
 .prog-pct {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
   font-family: var(--mono); font-size: 13px; color: #ffffff;
@@ -556,7 +556,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.6</div>
+        <div class="sys-val">v-delayCalc 0.2.7</div>
       </div>
     </div>
   </div>
@@ -605,18 +605,47 @@ function logDatetime() {
   log(`解析日時: ${dt}`,'info');
 }
 
+// プログレスバー管理
+let _progTarget = 0;
+let _progCurrent = 0;
+let _progRafId = null;
+
 function setProgress(pct, label='') {
-  const p=document.getElementById('prog'), f=document.getElementById('progFill');
-  const pc=document.getElementById('progPct');
-  const lb=document.getElementById('progLabel');
-  if(pct>0&&pct<100){
-    p.style.display='block'; f.style.width=pct+'%';
-    pc.textContent=pct+'%';
-    if(label){ lb.style.display='block'; lb.textContent=label; }
-  } else if(pct>=100){
-    f.style.width='100%'; pc.textContent='100%';
-    setTimeout(()=>{ p.style.display='none'; lb.style.display='none'; pc.textContent=''; },500);
+  const p  = document.getElementById('prog');
+  const f  = document.getElementById('progFill');
+  const pc = document.getElementById('progPct');
+  const lb = document.getElementById('progLabel');
+
+  if (pct > 0) {
+    p.style.display = 'block';
+    if (label) { lb.style.display = 'block'; lb.textContent = label; }
   }
+
+  if (pct >= 100) {
+    _progTarget = 100;
+    f.style.width = '100%'; pc.textContent = '100%';
+    setTimeout(() => {
+      p.style.display = 'none'; lb.style.display = 'none';
+      pc.textContent = ''; _progCurrent = 0; _progTarget = 0;
+    }, 600);
+    return;
+  }
+
+  _progTarget = pct;
+
+  // アニメーションループ（目標値に向かって少しずつ進む）
+  if (_progRafId) return;
+  const animate = () => {
+    if (_progCurrent < _progTarget) {
+      _progCurrent = Math.min(_progTarget, _progCurrent + 0.4);
+      f.style.width  = _progCurrent + '%';
+      pc.textContent = Math.floor(_progCurrent) + '%';
+      _progRafId = requestAnimationFrame(animate);
+    } else {
+      _progRafId = null;
+    }
+  };
+  _progRafId = requestAnimationFrame(animate);
 }
 
 function copyLog() {
@@ -1089,7 +1118,7 @@ function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe, totalDur) {
     ctx.clearRect(0, 0, W, H);
 
     // 1秒ごとのグリッド線
-    ctx.strokeStyle = '#333333';
+    ctx.strokeStyle = '#555555';
     ctx.lineWidth = 1;
     for (let t = 1; t < totalDur; t++) {
       const gx = (t / tRange) * W;
