@@ -552,7 +552,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.2</div>
+        <div class="sys-val">v-delayCalc 0.2.3</div>
       </div>
     </div>
   </div>
@@ -1052,28 +1052,29 @@ async function analyze(){
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
 
-  // グラフ用：粗スキャンのdiffsとそのピーク位置（最大値インデックス）を使用
-  // ピークはdiffs内の最大値の位置を正直に使う
-  const cutInCoarse  = detectCut(cIn);
-  const cutOutCoarse = detectCut(cOut);
-  const coarseDiffsIn  = cutInCoarse.diffs;
-  const coarseDiffsOut = cutOutCoarse.diffs;
-  const peakInCoarse   = cutInCoarse.idx - 1;   // diffsのインデックス（scores.idxより1小さい）
-  const peakOutCoarse  = cutOutCoarse.idx - 1;
+  // グラフ用：精密スキャンのdiffsを使用（カット周辺のみ・スパイクが鮮明）
+  // X軸は各自の時刻ベースで描画
+  const cutInFine  = detectCut(fIn1.length >= fIn2.length ? fIn1 : fIn2);
+  const cutOutFine = detectCut(fOut1.length >= fOut2.length ? fOut1 : fOut2);
 
   document.getElementById('graphWrap').style.display='block';
-  setTimeout(()=>drawGraph(coarseDiffsIn, coarseDiffsOut, peakInCoarse, peakOutCoarse), 50);
+  setTimeout(()=>drawGraph(
+    cutInFine.diffs,  cutInFine.idx - 1,  fIs, fIe,
+    cutOutFine.diffs, cutOutFine.idx - 1, fOs, fOe
+  ), 50);
   setStep(2,'done');
   setStep(3,'done');
   document.getElementById('analyzeBtn').disabled=false;
 }
 
 // ── GRAPH ──
-function drawGraph(dI, dO, pI, pO) {
-  // 共通時間軸（粗スキャン）でINPUT・OUTPUTを2段描画
-  // ルート変換でスパイク以外の変化も見えるようにする
+function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe) {
+  // 共通時間軸：両スキャン窓を包含する範囲を基準にX軸を揃える
+  const tStart = Math.min(tIs, tOs);
+  const tEnd   = Math.max(tIe, tOe);
+  const tRange = tEnd - tStart || 1;
 
-  function drawSingle(canvasId, diffs, peak, color) {
+  function drawSingle(canvasId, diffs, peak, color, winStart, winEnd) {
     const c = document.getElementById(canvasId);
     if (!c) return;
     c.width = c.parentElement.clientWidth;
@@ -1081,17 +1082,19 @@ function drawGraph(dI, dO, pI, pO) {
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, W, H);
 
-    // 最小値底上げ正規化（スパイクを鋭く保ちつつゼロ連続を解消）
-    const minV = Math.min(...diffs);
-    const maxV = Math.max(...diffs) || 1;
-    const range = maxV - minV || 1;
-    const normalized = diffs.map(v => (v - minV) / range);
-    const n = normalized.length;
+    const n = diffs.length;
+    const winRange = winEnd - winStart || 1;
 
-    // 折れ線＋塗りつぶし
+    // 最小値底上げ正規化
+    const minV  = Math.min(...diffs);
+    const maxV  = Math.max(...diffs) || 1;
+    const range = maxV - minV || 1;
+    const norm  = diffs.map(v => (v - minV) / range);
+
+    // X座標：共通時間軸上での位置
     const getXY = i => ({
-      x: (i / (n - 1)) * W,
-      y: H - normalized[i] * (H - 8)
+      x: ((winStart + (i / (n - 1)) * winRange - tStart) / tRange) * W,
+      y: H - norm[i] * (H - 8)
     });
 
     // 塗りつぶし
@@ -1099,41 +1102,34 @@ function drawGraph(dI, dO, pI, pO) {
     grad.addColorStop(0, color + '44');
     grad.addColorStop(1, color + '00');
     ctx.beginPath();
-    normalized.forEach((_, i) => {
+    norm.forEach((_, i) => {
       const {x, y} = getXY(i);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
-    ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
+    ctx.lineTo(getXY(n-1).x, H); ctx.lineTo(getXY(0).x, H); ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
 
     // 折れ線
     ctx.beginPath();
-    normalized.forEach((_, i) => {
+    norm.forEach((_, i) => {
       const {x, y} = getXY(i);
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
-    ctx.strokeStyle = color + 'cc';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    ctx.strokeStyle = color + 'cc'; ctx.lineWidth = 1.5; ctx.stroke();
 
     // スパイクマーカー
-    if (peak >= 0 && peak < normalized.length) {
+    if (peak >= 0 && peak < norm.length) {
       const {x: px, y: py} = getXY(peak);
-      // 白1px実線
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.setLineDash([]);
       ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
-      // ドット
       ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
       ctx.fillStyle = color; ctx.fill();
       ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
     }
   }
 
-  drawSingle('graphCanvasIn',  dI, pI, '#00ffff');
-  drawSingle('graphCanvasOut', dO, pO, '#ff4f83');
+  drawSingle('graphCanvasIn',  dI, pI, '#00ffff', tIs, tIe);
+  drawSingle('graphCanvasOut', dO, pO, '#ff4f83', tOs, tOe);
 }
 </script>
 </body>
