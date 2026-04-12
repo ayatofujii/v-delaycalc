@@ -556,7 +556,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.7</div>
+        <div class="sys-val">v-delayCalc 0.2.8</div>
       </div>
     </div>
   </div>
@@ -633,15 +633,22 @@ function setProgress(pct, label='') {
 
   _progTarget = pct;
 
-  // アニメーションループ（目標値に向かって少しずつ進む）
+  // すでにアニメーション中なら目標値更新だけで既存ループが追いかける
   if (_progRafId) return;
+
   const animate = () => {
-    if (_progCurrent < _progTarget) {
-      _progCurrent = Math.min(_progTarget, _progCurrent + 0.4);
+    if (_progCurrent < _progTarget - 0.1) {
+      // 目標値までの残り距離に応じてスピードを調整（近づくほど遅く）
+      const diff = _progTarget - _progCurrent;
+      const speed = Math.max(0.3, Math.min(1.5, diff * 0.05));
+      _progCurrent = Math.min(_progTarget, _progCurrent + speed);
       f.style.width  = _progCurrent + '%';
       pc.textContent = Math.floor(_progCurrent) + '%';
       _progRafId = requestAnimationFrame(animate);
     } else {
+      _progCurrent = _progTarget;
+      f.style.width  = _progCurrent + '%';
+      pc.textContent = Math.floor(_progCurrent) + '%';
       _progRafId = null;
     }
   };
