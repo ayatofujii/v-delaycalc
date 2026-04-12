@@ -517,7 +517,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 2</div>
-        <div class="sys-val">精密スキャン — カット前後±0.8秒を54サンプルで3回スキャン（解像度 ≒ 30ms）。3回の結果の中央値を採用し外れ値を除去</div>
+        <div class="sys-val">精密スキャン — IN/OUTの粗カット位置を両方カバーする共通窓を54サンプルで3回スキャン（解像度 ≒ 30ms）。IN/OUTを同時取得し、3回の中央値を採用して外れ値を除去</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">スコア指標</div>
@@ -557,7 +557,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.3.0</div>
+        <div class="sys-val">v-delayCalc 0.3.1</div>
       </div>
     </div>
   </div>
@@ -828,47 +828,42 @@ function scoreDiff(a, b) {
   return histDiff * 0.55 + edgeDiff * 0.35 + lumDiff * 0.10;
 }
 
-function captureScores(rect, s0, e0, N) {
+// IN/OUTを1回の再生で同時取得
+function captureScoresBoth(rectA, rectB, s0, e0, N) {
   return new Promise(resolve => {
-    const vr  = toVC(rect);
+    const vrA = toVC(rectA), vrB = toVC(rectB);
     const off = document.createElement('canvas');
     off.width = videoEl.videoWidth; off.height = videoEl.videoHeight;
     const ctx = off.getContext('2d');
-    const scores = [], times = [];
+    const scoresA = [], timesA = [], scoresB = [], timesB = [];
     const step = (e0 - s0) / N;
     let nc = s0, rafId = null, started = false, stuckCount = 0, lastT = -1;
 
     const finish = () => {
       if (rafId) cancelAnimationFrame(rafId);
       videoEl.pause();
-      resolve({ scores, times });
+      resolve({ scoresA, timesA, scoresB, timesB });
     };
 
     const tick = () => {
       const t = videoEl.currentTime;
-
-      // seekがまだ完了していない場合はスキップ
       if (t < s0 - 0.05) { rafId = requestAnimationFrame(tick); return; }
 
-      // 再生が止まっていないか監視（同じ時刻が10フレーム以上続いたら再開）
       if (t === lastT) {
         stuckCount++;
-        if (stuckCount > 10) {
-          stuckCount = 0;
-          videoEl.play().catch(() => {});
-        }
-      } else {
-        stuckCount = 0;
-        lastT = t;
-      }
+        if (stuckCount > 10) { stuckCount = 0; videoEl.play().catch(() => {}); }
+      } else { stuckCount = 0; lastT = t; }
 
-      while (scores.length < N && t >= nc - 0.005) {
+      while (scoresA.length < N && t >= nc - 0.005) {
         ctx.drawImage(videoEl, 0, 0);
-        scores.push(getFrameScore(ctx, vr));
-        times.push(t);
+        // 1回のdrawImageでIN/OUTを同時にスコア取得
+        scoresA.push(getFrameScore(ctx, vrA));
+        timesA.push(t);
+        scoresB.push(getFrameScore(ctx, vrB));
+        timesB.push(t);
         nc += step;
       }
-      if (scores.length >= N || t >= e0 + 0.15) { finish(); return; }
+      if (scoresA.length >= N || t >= e0 + 0.15) { finish(); return; }
       rafId = requestAnimationFrame(tick);
     };
 
@@ -956,13 +951,9 @@ async function analyze(){
   const FW = 1.6, FN = 54;
   log(`動画長: ${dur.toFixed(1)}s / 粗スキャン: ${CN}サンプル（≒${(coarseInterval*1000).toFixed(0)}ms間隔・全体）`,'info');
 
-  setProgress(5,'INPUT 粗スキャン中（動画全体）...');
-  const {scores:cIn, times:tcIn} = await captureScores(rectIn, s0, e0, CN);
-  log(`INPUT粗スキャン: ${cIn.length}サンプル`,'ok');
-
-  setProgress(30,'OUTPUT 粗スキャン中（動画全体）...');
-  const {scores:cOut, times:tcOut} = await captureScores(rectOut, s0, e0, CN);
-  log(`OUTPUT粗スキャン: ${cOut.length}サンプル`,'ok');
+  setProgress(5,'粗スキャン中（IN/OUT同時）...');
+  const {scoresA:cIn, timesA:tcIn, scoresB:cOut, timesB:tcOut} = await captureScoresBoth(rectIn, rectOut, s0, e0, CN);
+  log(`粗スキャン IN: ${cIn.length}サンプル / OUT: ${cOut.length}サンプル`,'ok');
 
   if(cIn.length<5||cOut.length<5){
     showAlert('⚠ フレーム取得失敗','動画を再度読み込んでお試しください。');
@@ -975,29 +966,22 @@ async function analyze(){
   const rOs=tcOut[rOut.idx]??(s0+rOut.idx*cs);
   log(`粗カット IN: ${rIs.toFixed(2)}s (SNR=${rIn.snr.toFixed(1)}) / OUT: ${rOs.toFixed(2)}s (SNR=${rOut.snr.toFixed(1)})`,'info');
 
-  setProgress(50,'INPUT 精密スキャン中...');
-  let fIs = rIs - FW/2, fIe = rIs + FW/2;
-  if (fIe > dur - 0.1) { fIe = dur - 0.1; fIs = Math.max(0, fIe - FW); }
-  fIs = Math.max(0, fIs);
-  log(`INPUT精密窓: ${fIs.toFixed(2)}s〜${fIe.toFixed(2)}s`,'info');
-  // 3回スキャンして中央値を使用（外れ値の影響を除去）
-  const {scores:fIn1, times:tfIn1} = await captureScores(rectIn, fIs, fIe, FN);
-  const {scores:fIn2, times:tfIn2} = await captureScores(rectIn, fIs, fIe, FN);
-  const {scores:fIn3, times:tfIn3} = await captureScores(rectIn, fIs, fIe, FN);
-  const fsI = (fIe - fIs) / FN;
-  log(`INPUT精密: ${fIn1.length}/${fIn2.length}/${fIn3.length}サンプル / ≒${(fsI*1000).toFixed(0)}ms解像度`,'ok');
+  // 精密スキャン窓：IN/OUTの粗カット位置を両方カバーする共通窓を算出
+  const fWinS = Math.max(0, Math.min(rIs, rOs) - FW/2);
+  const fWinE = Math.min(dur - 0.1, Math.max(rIs, rOs) + FW/2);
+  log(`精密窓（共通）: ${fWinS.toFixed(2)}s〜${fWinE.toFixed(2)}s`,'info');
+  const fsStep = (fWinE - fWinS) / FN;
 
-  setProgress(65,'OUTPUT 精密スキャン中...');
-  let fOs = rOs - FW/2, fOe = rOs + FW/2;
-  if (fOe > dur - 0.1) { fOe = dur - 0.1; fOs = Math.max(0, fOe - FW); }
-  fOs = Math.max(0, fOs);
-  log(`OUTPUT精密窓: ${fOs.toFixed(2)}s〜${fOe.toFixed(2)}s`,'info');
-  // 3回スキャンして中央値を使用
-  const {scores:fOut1, times:tfOut1} = await captureScores(rectOut, fOs, fOe, FN);
-  const {scores:fOut2, times:tfOut2} = await captureScores(rectOut, fOs, fOe, FN);
-  const {scores:fOut3, times:tfOut3} = await captureScores(rectOut, fOs, fOe, FN);
-  const fsO = (fOe - fOs) / FN;
-  log(`OUTPUT精密: ${fOut1.length}/${fOut2.length}/${fOut3.length}サンプル / ≒${(fsO*1000).toFixed(0)}ms解像度`,'ok');
+  // 精密スキャン3回（IN/OUTを同時取得・中央値で外れ値除去）
+  setProgress(50,'精密スキャン中（IN/OUT同時・1回目）...');
+  const {scoresA:fIn1, timesA:tfIn1, scoresB:fOut1, timesB:tfOut1} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
+  setProgress(65,'精密スキャン中（IN/OUT同時・2回目）...');
+  const {scoresA:fIn2, timesA:tfIn2, scoresB:fOut2, timesB:tfOut2} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
+  setProgress(80,'精密スキャン中（IN/OUT同時・3回目）...');
+  const {scoresA:fIn3, timesA:tfIn3, scoresB:fOut3, timesB:tfOut3} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
+  log(`精密スキャン: IN ${fIn1.length}/${fIn2.length}/${fIn3.length} / OUT ${fOut1.length}/${fOut2.length}/${fOut3.length} / ≒${(fsStep*1000).toFixed(0)}ms解像度`,'ok');
+  // グラフ描画用に窓情報を保持
+  const fIs = fWinS, fIe = fWinE, fOs = fWinS, fOe = fWinE, fsI = fsStep, fsO = fsStep;
 
   setProgress(88,'カット位置を特定中...');
   await new Promise(r=>setTimeout(r,10));
