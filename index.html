@@ -512,11 +512,11 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 1</div>
-        <div class="sys-val">粗スキャン — 動画全体を1秒間隔でサンプル（5秒動画なら5サンプル、30秒動画なら30サンプル）。カラーヒストグラム・エッジ量・輝度の複合スコアでカット位置を特定</div>
+        <div class="sys-val">粗スキャン — 動画全体を1秒間隔でサンプル（最低30サンプル保証）。カラーヒストグラム・エッジ量・輝度の複合スコアでカット位置を特定</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 2</div>
-        <div class="sys-val">精密スキャン — カット前後±1.5秒を54サンプルで2回スキャン（解像度 ≒ 56ms）。2回の結果を平均してrAFタイミング揺らぎを除去</div>
+        <div class="sys-val">精密スキャン — カット前後±0.8秒を54サンプルで2回スキャン（解像度 ≒ 30ms）。2回の結果を平均してrAFタイミング揺らぎを除去</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">スコア指標</div>
@@ -552,7 +552,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.0</div>
+        <div class="sys-val">v-delayCalc 0.2.1</div>
       </div>
     </div>
   </div>
@@ -879,7 +879,8 @@ function detectCut(scores, margin=5){
   // スコアオブジェクト間の差分を計算
   const diffs = scores.slice(1).map((s, i) => scoreDiff(scores[i], s));
   const avg = diffs.reduce((a,b)=>a+b,0) / diffs.length;
-  const lo = Math.min(margin, Math.floor(diffs.length*0.1));
+  // marginをサンプル数の8%以下に制限（少ないサンプルでも動作するよう）
+  const lo = Math.min(margin, Math.max(1, Math.floor(diffs.length*0.08)));
   const hi = Math.max(diffs.length-1-lo, lo+1);
   let mx=-Infinity, mi=lo;
   diffs.forEach((d,i)=>{ if(i>=lo && i<=hi && d>mx){mx=d;mi=i;} });
@@ -931,14 +932,15 @@ async function analyze(){
   setProgress(1,'スキャン準備中...');
 
   const dur = videoEl.duration;
-  // 粗スキャン：動画全体を1秒間隔でサンプル
-  const COARSE_INTERVAL = 1.0; // 1秒ごと
-  const CN = Math.max(5, Math.floor(dur / COARSE_INTERVAL));
+  // 粗スキャン：1秒間隔を基本とし、最低30サンプルを保証
+  const MIN_CN = 30;
+  const CN = Math.max(MIN_CN, Math.floor(dur / 1.0));
   const s0 = 0;
   const e0 = dur;
-  // 精密スキャン：±1.5s窓・54サンプル（解像度≒56ms）
-  const FW = 3.0, FN = 54;
-  log(`動画長: ${dur.toFixed(1)}s / 粗スキャン: ${CN}サンプル（1秒間隔・全体）`,'info');
+  const coarseInterval = dur / CN;
+  // 精密スキャン：±0.8s窓（粗スキャン1秒間隔をカバーする余裕を持つ）54サンプル
+  const FW = 1.6, FN = 54;
+  log(`動画長: ${dur.toFixed(1)}s / 粗スキャン: ${CN}サンプル（≒${(coarseInterval*1000).toFixed(0)}ms間隔・全体）`,'info');
 
   setProgress(5,'INPUT 粗スキャン中（動画全体）...');
   const {scores:cIn, times:tcIn} = await captureScores(rectIn, s0, e0, CN);
