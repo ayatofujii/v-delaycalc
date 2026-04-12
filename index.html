@@ -509,11 +509,11 @@ footer {
     <div class="sys-info">
       <div class="sys-row">
         <div class="sys-key">解析エンジン</div>
-        <div class="sys-val">2段階カットチェンジ検出（2回平均）</div>
+        <div class="sys-val">2段階カットチェンジ検出（精密スキャン3回・中央値採用）</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 1</div>
-        <div class="sys-val">粗スキャン — 動画全体を1秒間隔でサンプル（最低30サンプル保証）。カラーヒストグラム・エッジ量・輝度の複合スコアでカット位置を特定</div>
+        <div class="sys-val">粗スキャン — 動画全体を最低30サンプル保証でスキャン（間隔は動画長に応じて変動、例：4秒動画で約130ms間隔）。カラーヒストグラム・エッジ量・輝度の複合スコアでカット位置を特定</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 2</div>
