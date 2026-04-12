@@ -512,11 +512,11 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 1</div>
-        <div class="sys-val">粗スキャン — 動画中央付近の最大3秒窓を60サンプルでスキャンし、カラーヒストグラム・エッジ量・輝度の複合スコアでカット位置を特定</div>
+        <div class="sys-val">粗スキャン — 動画全体を1秒間隔でサンプル（5秒動画なら5サンプル、30秒動画なら30サンプル）。カラーヒストグラム・エッジ量・輝度の複合スコアでカット位置を特定</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 2</div>
-        <div class="sys-val">精密スキャン — カット前後±0.3秒を54サンプルで2回スキャン（解像度 ≒ 11ms）。2回の結果を平均してrAFタイミング揺らぎを除去</div>
+        <div class="sys-val">精密スキャン — カット前後±1.5秒を54サンプルで2回スキャン（解像度 ≒ 56ms）。2回の結果を平均してrAFタイミング揺らぎを除去</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">スコア指標</div>
@@ -552,7 +552,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.9</div>
+        <div class="sys-val">v-delayCalc 0.2.0</div>
       </div>
     </div>
   </div>
@@ -930,19 +930,22 @@ async function analyze(){
   setStep(3,'active');
   setProgress(1,'スキャン準備中...');
 
-  const dur=videoEl.duration;
-  const WIN = Math.min(3.0, dur * 0.9);
-  const CN=60, FW=0.6, FN=54;  // FW: ±0.3s（合計0.6s窓）→ 解像度≒11ms
-  const s0 = Math.min(Math.max(0, dur/2 - WIN/2), Math.max(0, dur - WIN));
-  const e0 = Math.min(s0 + WIN, dur);
-  log(`窓: ${s0.toFixed(1)}s〜${e0.toFixed(1)}s`,'info');
+  const dur = videoEl.duration;
+  // 粗スキャン：動画全体を1秒間隔でサンプル
+  const COARSE_INTERVAL = 1.0; // 1秒ごと
+  const CN = Math.max(5, Math.floor(dur / COARSE_INTERVAL));
+  const s0 = 0;
+  const e0 = dur;
+  // 精密スキャン：±1.5s窓・54サンプル（解像度≒56ms）
+  const FW = 3.0, FN = 54;
+  log(`動画長: ${dur.toFixed(1)}s / 粗スキャン: ${CN}サンプル（1秒間隔・全体）`,'info');
 
-  setProgress(5,'INPUT スキャン中...');
-  const {scores:cIn, times:tcIn} =await captureScores(rectIn, s0,e0,CN);
+  setProgress(5,'INPUT 粗スキャン中（動画全体）...');
+  const {scores:cIn, times:tcIn} = await captureScores(rectIn, s0, e0, CN);
   log(`INPUT粗スキャン: ${cIn.length}サンプル`,'ok');
 
-  setProgress(25,'OUTPUT スキャン中...');
-  const {scores:cOut,times:tcOut}=await captureScores(rectOut,s0,e0,CN);
+  setProgress(30,'OUTPUT 粗スキャン中（動画全体）...');
+  const {scores:cOut, times:tcOut} = await captureScores(rectOut, s0, e0, CN);
   log(`OUTPUT粗スキャン: ${cOut.length}サンプル`,'ok');
 
   if(cIn.length<5||cOut.length<5){
