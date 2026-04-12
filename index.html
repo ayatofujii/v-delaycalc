@@ -447,7 +447,6 @@ footer {
     </div>
 
     <div class="graph-wrap" id="graphWrap">
-      <div class="g-label">CHANGE-SCORE TIMELINE</div>
       <div class="g-row">
         <div class="g-row-label"><span style="color:#00ffff">●</span> <span style="color:#ffffff">INPUT</span></div>
         <canvas class="g-canvas" id="graphCanvasIn" height="52"></canvas>
@@ -541,7 +540,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.6</div>
+        <div class="sys-val">v-delayCalc 0.1.7</div>
       </div>
     </div>
   </div>
@@ -628,9 +627,17 @@ function loadVideo(file) {
   videoEl.muted=true; videoEl.playsInline=true; videoEl.preload='metadata';
   videoEl.addEventListener('loadedmetadata', ()=>{
     t.className='upload-text ok';
-    t.innerHTML=`<b>${file.name}</b>${videoEl.duration.toFixed(1)}s / ${(file.size/1024/1024).toFixed(1)}MB`;
+    t.innerHTML=`<b>${file.name}</b>${videoEl.duration.toFixed(1)}s / ${(file.size/1024/1024).toFixed(1)}MB <span style="color:var(--mid);font-size:11px;">（再読み込みはタップ）</span>`;
     zone.classList.add('loaded');
     setStep(1,'done');
+    // 再読み込み時は矩形・結果・グラフをリセット
+    resetRects();
+    setResultCells('—','—','—');
+    setConf(null);
+    document.getElementById('graphWrap').style.display='none';
+    document.getElementById('alertBlock').style.display='none';
+    document.getElementById('logBox').innerHTML='';
+    document.getElementById('logBlock').style.display='none';
     gotoMid();
   });
   videoEl.addEventListener('error', ()=>{
@@ -1093,11 +1100,12 @@ function drawGraph(dI, dO, pI, pO) {
     // スパイクマーカー
     if (peak >= 0 && peak < transformed.length) {
       const {x: px, y: py} = getXY(peak);
-      ctx.strokeStyle = color + '88';
+      // 白1px実線
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
       ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+      // ドット
       ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
       ctx.fillStyle = color; ctx.fill();
       ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
