@@ -556,7 +556,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.4</div>
+        <div class="sys-val">v-delayCalc 0.2.5</div>
       </div>
     </div>
   </div>
@@ -1063,9 +1063,11 @@ async function analyze(){
   const cutOutFine = detectCut(bestOut);
 
   document.getElementById('graphWrap').style.display='block';
+  // X軸を動画全体尺（0s〜dur）に統一
   setTimeout(()=>drawGraph(
     cutInFine.diffs,  cutInFine.idx - 1,  fIs, fIe,
-    cutOutFine.diffs, cutOutFine.idx - 1, fOs, fOe
+    cutOutFine.diffs, cutOutFine.idx - 1, fOs, fOe,
+    dur
   ), 50);
   setStep(2,'done');
   setStep(3,'done');
@@ -1073,11 +1075,10 @@ async function analyze(){
 }
 
 // ── GRAPH ──
-function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe) {
-  // 共通時間軸：両スキャン窓を包含する範囲を基準にX軸を揃える
-  const tStart = Math.min(tIs, tOs);
-  const tEnd   = Math.max(tIe, tOe);
-  const tRange = tEnd - tStart || 1;
+function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe, totalDur) {
+  // X軸：動画全体尺（0s〜totalDur）を基準
+  const tStart = 0;
+  const tRange = totalDur || 1;
 
   function drawSingle(canvasId, diffs, peak, color, winStart, winEnd) {
     const c = document.getElementById(canvasId);
@@ -1096,9 +1097,9 @@ function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe) {
     const range = maxV - minV || 1;
     const norm  = diffs.map(v => (v - minV) / range);
 
-    // X座標：共通時間軸上での位置
+    // X座標：動画全体尺上での位置
     const getXY = i => ({
-      x: ((winStart + (i / (n - 1)) * winRange - tStart) / tRange) * W,
+      x: ((winStart + (i / (n - 1)) * winRange) / tRange) * W,
       y: H - norm[i] * (H - 8)
     });
 
