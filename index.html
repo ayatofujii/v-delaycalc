@@ -527,6 +527,10 @@ footer {
         <div class="sys-val">OUTPUT側カット時刻 − INPUT側カット時刻 = ズレ量</div>
       </div>
       <div class="sys-row">
+        <div class="sys-key">計測方法</div>
+        <div class="sys-val">ミリ秒（ms）で計測し、フレーム換算する。30fps換算 = round(ms÷1000×30) + オフセット。60fps換算 = 30fps換算 × 2。各換算値は独立した丸め処理を行わず、30fps結果から一貫して算出。</div>
+      </div>
+      <div class="sys-row">
         <div class="sys-key">補正値</div>
         <div class="sys-val">+1フレーム（rAFキャプチャの系統的誤差を補正）</div>
       </div>
@@ -540,7 +544,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.8</div>
+        <div class="sys-val">v-delayCalc 0.1.9</div>
       </div>
     </div>
   </div>
@@ -1027,7 +1031,7 @@ async function analyze(){
 
   const lagMs  = Math.round(Math.abs(lagSec)*1000);
   const lagF30 = Math.round(Math.abs(lagSec)*30) + OFFSET_FRAMES;
-  const lagF60 = Math.round(Math.abs(lagSec)*60) + OFFSET_FRAMES * 2;
+  const lagF60 = lagF30 * 2; // 30fps結果を2倍（個別丸めによる不一致を防ぐ）
   log(`ズレ: ${lagSec.toFixed(3)}s = ${lagMs}ms`,'ok');
   log(`30fps換算: ${lagF30}f / 60fps換算: ${lagF60}f（オフセット+${OFFSET_FRAMES}f適用）`,'ok');
 
