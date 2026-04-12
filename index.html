@@ -1156,7 +1156,7 @@ function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe, totalDur) {
   for (let t = 0; t <= steps; t++) {
     const span = document.createElement('span');
     span.textContent = t;
-    span.style.cssText = `font-family:var(--mono);font-size:10px;color:#666666;position:absolute;left:${(t / tRange * 100).toFixed(3)}%;transform:translateX(-50%);`;
+    span.style.cssText = `font-family:var(--mono);font-size:10px;color:#888888;position:absolute;left:${(t / tRange * 100).toFixed(3)}%;transform:translateX(-50%);`;
     axis.appendChild(span);
   }
 }
