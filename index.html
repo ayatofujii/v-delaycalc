@@ -540,7 +540,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.1.7</div>
+        <div class="sys-val">v-delayCalc 0.1.8</div>
       </div>
     </div>
   </div>
@@ -1035,13 +1035,14 @@ async function analyze(){
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
 
-  // グラフ用：粗スキャンのdiffsを共通時間軸で使用
-  // ピーク位置は精密スキャンで求めた時刻を粗スキャンのインデックスに変換
-  const coarseDiffsIn  = detectCut(cIn).diffs;
-  const coarseDiffsOut = detectCut(cOut).diffs;
-  const coarseStep = (e0 - s0) / CN;
-  const peakInCoarse  = Math.round((cIs - s0) / coarseStep) - 1;
-  const peakOutCoarse = Math.round((cOs - s0) / coarseStep) - 1;
+  // グラフ用：粗スキャンのdiffsとそのピーク位置（最大値インデックス）を使用
+  // ピークはdiffs内の最大値の位置を正直に使う
+  const cutInCoarse  = detectCut(cIn);
+  const cutOutCoarse = detectCut(cOut);
+  const coarseDiffsIn  = cutInCoarse.diffs;
+  const coarseDiffsOut = cutOutCoarse.diffs;
+  const peakInCoarse   = cutInCoarse.idx - 1;   // diffsのインデックス（scores.idxより1小さい）
+  const peakOutCoarse  = cutOutCoarse.idx - 1;
 
   document.getElementById('graphWrap').style.display='block';
   setTimeout(()=>drawGraph(coarseDiffsIn, coarseDiffsOut, peakInCoarse, peakOutCoarse), 50);
