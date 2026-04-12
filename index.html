@@ -517,7 +517,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">PHASE 2</div>
-        <div class="sys-val">精密スキャン — IN/OUTの粗カット位置を両方カバーする共通窓を54サンプルで3回スキャン（解像度 ≒ 30ms）。IN/OUTを同時取得し、3回の中央値を採用して外れ値を除去</div>
+        <div class="sys-val">精密スキャン — IN/OUTの粗カット位置を両方カバーする共通窓を30fps基準（≒33ms/サンプル）でスキャン。IN/OUTを同時取得し3回実施、中央値を採用して外れ値を除去</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">スコア指標</div>
@@ -529,7 +529,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">計測方法</div>
-        <div class="sys-val">ミリ秒（ms）で計測し、フレーム換算する。30fps換算 = round(ms÷1000×30) + オフセット。60fps換算 = 30fps換算 × 2。各換算値は独立した丸め処理を行わず、30fps結果から一貫して算出。</div>
+        <div class="sys-val">30fps基準（≒33ms/サンプル）で計測。結果はmsで算出し、30fps換算 = round(ms÷1000×30) + オフセット、60fps換算 = 30fps換算 × 2 と変換。60fps・ms値は30fps結果から一貫して算出し、独立した丸め処理は行わない。</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">補正値</div>
@@ -557,7 +557,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.3.1</div>
+        <div class="sys-val">v-delayCalc 0.3.2</div>
       </div>
     </div>
   </div>
@@ -947,8 +947,9 @@ async function analyze(){
   const s0 = 0;
   const e0 = dur;
   const coarseInterval = dur / CN;
-  // 精密スキャン：±0.8s窓（粗スキャン1秒間隔をカバーする余裕を持つ）54サンプル
-  const FW = 1.6, FN = 54;
+  // 精密スキャン：±0.8s窓。サンプル間隔を30fps基準（≒33ms=1f）に固定
+  const FW = 1.6;
+  const FRAME_INTERVAL = 1 / 30; // 33.3ms = 1フレーム（30fps基準）
   log(`動画長: ${dur.toFixed(1)}s / 粗スキャン: ${CN}サンプル（≒${(coarseInterval*1000).toFixed(0)}ms間隔・全体）`,'info');
 
   setProgress(5,'粗スキャン中（IN/OUT同時）...');
@@ -969,8 +970,10 @@ async function analyze(){
   // 精密スキャン窓：IN/OUTの粗カット位置を両方カバーする共通窓を算出
   const fWinS = Math.max(0, Math.min(rIs, rOs) - FW/2);
   const fWinE = Math.min(dur - 0.1, Math.max(rIs, rOs) + FW/2);
-  log(`精密窓（共通）: ${fWinS.toFixed(2)}s〜${fWinE.toFixed(2)}s`,'info');
-  const fsStep = (fWinE - fWinS) / FN;
+  // サンプル数を窓幅÷1フレーム間隔で決定（30fps基準・端数切り上げ）
+  const FN = Math.ceil((fWinE - fWinS) / FRAME_INTERVAL);
+  const fsStep = FRAME_INTERVAL; // 常に33.3ms固定
+  log(`精密窓（共通）: ${fWinS.toFixed(2)}s〜${fWinE.toFixed(2)}s / ${FN}サンプル（30fps基準・≒33ms/sample）`,'info');
 
   // 精密スキャン3回（IN/OUTを同時取得・中央値で外れ値除去）
   setProgress(50,'精密スキャン中（IN/OUT同時・1回目）...');
@@ -979,7 +982,7 @@ async function analyze(){
   const {scoresA:fIn2, timesA:tfIn2, scoresB:fOut2, timesB:tfOut2} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
   setProgress(80,'精密スキャン中（IN/OUT同時・3回目）...');
   const {scoresA:fIn3, timesA:tfIn3, scoresB:fOut3, timesB:tfOut3} = await captureScoresBoth(rectIn, rectOut, fWinS, fWinE, FN);
-  log(`精密スキャン: IN ${fIn1.length}/${fIn2.length}/${fIn3.length} / OUT ${fOut1.length}/${fOut2.length}/${fOut3.length} / ≒${(fsStep*1000).toFixed(0)}ms解像度`,'ok');
+  log(`精密スキャン: IN ${fIn1.length}/${fIn2.length}/${fIn3.length} / OUT ${fOut1.length}/${fOut2.length}/${fOut3.length} / ${(fsStep*1000).toFixed(1)}ms/sample（1f@30fps）`,'ok');
   // グラフ描画用に窓情報を保持
   const fIs = fWinS, fIe = fWinE, fOs = fWinS, fOe = fWinE, fsI = fsStep, fsO = fsStep;
 
