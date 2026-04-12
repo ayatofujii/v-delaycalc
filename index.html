@@ -455,6 +455,7 @@ footer {
         <div class="g-row-label"><span style="color:#ff4f83">●</span> <span style="color:#ffffff">OUTPUT</span></div>
         <canvas class="g-canvas" id="graphCanvasOut" height="52"></canvas>
       </div>
+      <div id="graphXAxis" style="display:flex;justify-content:space-between;padding:2px 0 0;"></div>
     </div>
   </div>
 
@@ -556,7 +557,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.2.9</div>
+        <div class="sys-val">v-delayCalc 0.3.0</div>
       </div>
     </div>
   </div>
@@ -1019,7 +1020,7 @@ async function analyze(){
 
   const fInMedian = detectCutMedian([fIn1,fIn2,fIn3],[tfIn1,tfIn2,tfIn3], fIs, fsI);
   if (fInMedian !== null) {
-    cI  = detectCut(fIn1.length >= fIn2.length ? (fIn1.length >= fIn3.length ? fIn1 : fIn3) : (fIn2.length >= fIn3.length ? fIn2 : fIn3));
+    cI  = detectCut([fIn1,fIn2,fIn3].reduce((a,b)=>a.length>=b.length?a:b));
     cIs = fInMedian;
     log(`精密カット IN:  t=${cIs.toFixed(3)}s  SNR=${cI.snr.toFixed(1)}`,'ok');
   } else {
@@ -1030,7 +1031,7 @@ async function analyze(){
 
   const fOutMedian = detectCutMedian([fOut1,fOut2,fOut3],[tfOut1,tfOut2,tfOut3], fOs, fsO);
   if (fOutMedian !== null) {
-    cO  = detectCut(fOut1.length >= fOut2.length ? (fOut1.length >= fOut3.length ? fOut1 : fOut3) : (fOut2.length >= fOut3.length ? fOut2 : fOut3));
+    cO  = detectCut([fOut1,fOut2,fOut3].reduce((a,b)=>a.length>=b.length?a:b));
     cOs = fOutMedian;
     log(`精密カット OUT: t=${cOs.toFixed(3)}s SNR=${cO.snr.toFixed(1)}`,'ok');
   } else {
@@ -1065,17 +1066,11 @@ async function analyze(){
   setResultCells(lagF30, lagF60, lagMs);
   setConf(snr);
 
-  // グラフ用：精密スキャン3回のうち最もサンプルが多いものを使用
-  const bestIn  = [fIn1,fIn2,fIn3].reduce((a,b)=>a.length>=b.length?a:b);
-  const bestOut = [fOut1,fOut2,fOut3].reduce((a,b)=>a.length>=b.length?a:b);
-  const cutInFine  = detectCut(bestIn);
-  const cutOutFine = detectCut(bestOut);
-
   document.getElementById('graphWrap').style.display='block';
-  // X軸を動画全体尺（0s〜dur）に統一
+  // cI/cOのdiffsをそのままグラフに使用（余分なdetectCut不要）
   setTimeout(()=>drawGraph(
-    cutInFine.diffs,  cutInFine.idx - 1,  fIs, fIe,
-    cutOutFine.diffs, cutOutFine.idx - 1, fOs, fOe,
+    cI.diffs, cI.idx - 1, fIs, fIe,
+    cO.diffs, cO.idx - 1, fOs, fOe,
     dur
   ), 50);
   setStep(2,'done');
@@ -1153,6 +1148,17 @@ function drawGraph(dI, pI, tIs, tIe, dO, pO, tOs, tOe, totalDur) {
 
   drawSingle('graphCanvasIn',  dI, pI, '#00ffff', tIs, tIe);
   drawSingle('graphCanvasOut', dO, pO, '#ff4f83', tOs, tOe);
+
+  // X軸ラベル（整数秒のみ）
+  const axis = document.getElementById('graphXAxis');
+  axis.innerHTML = '';
+  const steps = Math.floor(totalDur);
+  for (let t = 0; t <= steps; t++) {
+    const span = document.createElement('span');
+    span.textContent = t;
+    span.style.cssText = 'font-family:var(--mono);font-size:10px;color:#666666;width:0;text-align:center;';
+    axis.appendChild(span);
+  }
 }
 </script>
 </body>
