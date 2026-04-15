@@ -378,7 +378,7 @@ footer {
           <path d="M2 8h20M2 16h20M7 4v4M7 16v4M12 4v16M17 4v4M17 16v4"/>
         </svg>
         <div class="upload-text" id="uploadText">
-          <b>タップして動画を選択</b>MP4 / MOV 対応（H.264形式）
+          <b>タップして動画を選択</b>MP4 / MOV 対応（H.264 / H.265）
         </div>
       </div>
     </div>
@@ -394,7 +394,7 @@ footer {
     <div class="canvas-outer" id="canvasOuter">
       <canvas id="frameCanvas"></canvas>
       <div class="cv-ph" id="cvPH">
-        <div class="cv-ph-text">動画の読み込みが完了すると<br>中間フレームのプレビュー画像が表示されます</div>
+        <div class="cv-ph-text">動画の読み込みが完了すると<br>プレビュー画像が表示されます</div>
       </div>
     </div>
 
@@ -484,9 +484,7 @@ footer {
       カットチェンジの瞬間を基準点としてズレ量を算出します。
       複数回カットチェンジが含まれる場合、最も変化の大きい1箇所が自動的に選ばれます。INとOUTで異なるカットチェンジが選ばれると誤検出の原因になるため、カットチェンジは1回のみにしてください。<br><br>
       <b>フレームレート：</b><br>
-      30fps推奨。解析は30fps基準で処理されるため、60fpsで撮影しても精度は変わりません。ファイルサイズを抑えるためにも30fpsを使用してください。<br><br>
-      <b>iPhoneでの撮影：</b><br>
-      設定 → カメラ → フォーマット → 「互換性優先」を選択してH.264・30fpsで撮影してください。
+      H.264 / H.265対応。30fps推奨。解析は30fps基準で処理されるため、60fpsで撮影しても精度は変わりません。ファイルサイズを抑えるためにも30fpsを使用してください。
     </div>
   </div>
 
@@ -544,7 +542,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">動作環境</div>
-        <div class="sys-val">ブラウザ完結（外部サーバー送信なし）/ MP4・MOV（H.264）対応</div>
+        <div class="sys-val">ブラウザ完結（外部サーバー送信なし）/ MP4・MOV（H.264 / H.265）対応</div>
       </div>
       <div class="sys-row">
         <div class="sys-key">矩形サイズ</div>
@@ -673,7 +671,7 @@ function loadVideo(file) {
     gotoMid();
   });
   videoEl.addEventListener('error', ()=>{
-    t.innerHTML='<b>❌ 読み込み失敗</b>MP4(H.264)形式を推奨します';
+    t.innerHTML='<b>❌ 読み込み失敗</b>MP4形式を推奨します（H.264 / H.265）';
     t.style.color='var(--accent2)';
   });
   videoEl.src=URL.createObjectURL(file); videoEl.load();
