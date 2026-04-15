@@ -558,7 +558,7 @@ footer {
       </div>
       <div class="sys-row">
         <div class="sys-key">VERSION</div>
-        <div class="sys-val">v-delayCalc 0.3.3<br>2026-04-15</div>
+        <div class="sys-val">v-delayCalc 0.3.4<br>2026-04-15</div>
       </div>
     </div>
   </div>
@@ -982,8 +982,14 @@ async function analyze(){
   log(`粗カット IN: ${rIs.toFixed(2)}s (SNR=${rIn.snr.toFixed(1)}) / OUT: ${rOs.toFixed(2)}s (SNR=${rOut.snr.toFixed(1)})`,'info');
 
   // 精密スキャン窓：IN/OUTの粗カット位置を両方カバーする共通窓を算出
-  const fWinS = Math.max(0, Math.min(rIs, rOs) - FW/2);
-  const fWinE = Math.min(dur - 0.1, Math.max(rIs, rOs) + FW/2);
+  let fWinS = Math.max(0, Math.min(rIs, rOs) - FW/2);
+  let fWinE = Math.min(dur - 0.1, Math.max(rIs, rOs) + FW/2);
+  // 末尾clipされた場合は窓を前にずらして幅を確保
+  const fWinNeeded = Math.max(rIs, rOs) + FW/2;
+  if (fWinNeeded > dur - 0.1) {
+    const shift = fWinNeeded - (dur - 0.1);
+    fWinS = Math.max(0, fWinS - shift);
+  }
   // サンプル数を窓幅÷1フレーム間隔で決定（30fps基準・端数切り上げ）
   const FN = Math.ceil((fWinE - fWinS) / FRAME_INTERVAL);
   log(`精密窓（共通）: ${fWinS.toFixed(2)}s〜${fWinE.toFixed(2)}s / ${FN}サンプル（30fps基準・≒33ms/sample）`,'info');
